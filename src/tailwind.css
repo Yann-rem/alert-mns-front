@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* Les tokens du design system (thème Light/Dark, espacements, rayons, typo)
+   seront exportés ici depuis Figma via un bloc @theme Tailwind v4. */
