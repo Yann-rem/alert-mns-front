@@ -1,4 +1,169 @@
 @import "tailwindcss";
 
-/* Les tokens du design system (thème Light/Dark, espacements, rayons, typo)
-   seront exportés ici depuis Figma via un bloc @theme Tailwind v4. */
+/* ===========================================================================
+   Design tokens
+   =========================================================================== */
+
+/* Variante `dark:` alignée sur la classe .dark (et non prefers-color-scheme) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Primitives
+   --------------------------------------------------------------------------- */
+:root {
+  --gray-0: #ffffff;
+  --gray-50: #f7f6f2;
+  --gray-100: #f4f3ee;
+  --gray-150: #ecebe6;
+  --gray-200: #e3e2dd;
+  --gray-300: #c9c8c1;
+  --gray-500: #9a9992;
+  --gray-700: #6b6a65;
+  --gray-800: #45443e;
+  --gray-850: #34332e;
+  --gray-900: #2b2b29;
+  --gray-925: #262521;
+  --gray-950: #1e1e1b;
+  --gray-965: #171715;
+  --gray-980: #131311;
+
+  --blue-50: #e6f1fb;
+  --blue-200: #b5d4f4;
+  --blue-500: #185fa5;
+  --blue-700: #0c447c;
+  --blue-900: #10263f;
+
+  --green-50: #e1f5ee;
+  --green-500: #1d9e75;
+  --green-700: #0f6e56;
+  --green-900: #10261d;
+
+  --amber-50: #faeeda;
+  --amber-300: #e7cb92;
+  --amber-500: #ba7517;
+  --amber-700: #854f0b;
+  --amber-900: #2e2410;
+
+  --red-50: #fcebeb;
+  --red-200: #e7c3c3;
+  --red-500: #c0392b;
+  --red-700: #a32d2d;
+  --red-900: #2e1512;
+}
+
+/* ---------------------------------------------------------------------------
+   Tokens exposés à Tailwind
+   --------------------------------------------------------------------------- */
+@theme static {
+  /* Typographie (Inter) */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--font-weight: 600;
+
+  --text-heading: 17px;
+  --text-heading--line-height: 24px;
+  --text-heading--font-weight: 600;
+
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+
+  --text-label: 13px;
+  --text-label--line-height: 18px;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+
+  --text-micro: 11px;
+  --text-micro--line-height: 14px;
+  --text-micro--font-weight: 500;
+
+  /* Rayons */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
+
+  /* Couleurs sémantiques */
+  --color-surface-default: var(--gray-0);
+  --color-surface-sunken: var(--gray-100);
+  --color-surface-muted: var(--gray-50);
+  --color-surface-page: var(--gray-150);
+
+  --color-text-primary: var(--gray-900);
+  --color-text-secondary: var(--gray-700);
+  --color-text-muted: var(--gray-500);
+  --color-text-on-accent: var(--gray-0);
+
+  --color-border-default: var(--gray-200);
+  --color-border-strong: var(--gray-300);
+
+  --color-accent-solid: var(--blue-500);
+  --color-accent-subtle: var(--blue-50);
+  --color-accent-border: var(--blue-200);
+  --color-accent-text: var(--blue-500);
+
+  --color-success-subtle: var(--green-50);
+  --color-success-text: var(--green-700);
+
+  --color-warning-subtle: var(--amber-50);
+  --color-warning-border: var(--amber-300);
+  --color-warning-icon: var(--amber-500);
+  --color-warning-text: var(--amber-700);
+
+  --color-danger-subtle: var(--red-50);
+  --color-danger-border: var(--red-200);
+  --color-danger-icon: var(--red-500);
+  --color-danger-text: var(--red-700);
+  --color-danger-solid: var(--red-500);
+
+  --color-presence-online: var(--green-500);
+}
+
+/* ---------------------------------------------------------------------------
+   Mode Sombre
+--------------------------------------------------------------------------- */
+.dark {
+  --color-surface-default: var(--gray-950);
+  --color-surface-sunken: var(--gray-965);
+  --color-surface-muted: var(--gray-925);
+  --color-surface-page: var(--gray-980);
+
+  --color-text-primary: var(--gray-50);
+  --color-text-secondary: var(--gray-300);
+
+  --color-border-default: var(--gray-850);
+  --color-border-strong: var(--gray-800);
+
+  --color-accent-subtle: var(--blue-900);
+  --color-accent-border: var(--blue-700);
+  --color-accent-text: var(--blue-200);
+
+  --color-success-subtle: var(--green-900);
+  --color-success-text: var(--green-500);
+
+  --color-warning-subtle: var(--amber-900);
+  --color-warning-border: var(--amber-700);
+  --color-warning-icon: var(--amber-300);
+  --color-warning-text: var(--amber-300);
+
+  --color-danger-subtle: var(--red-900);
+  --color-danger-border: var(--red-700);
+  --color-danger-text: var(--red-200);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background-color: var(--color-surface-page);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
