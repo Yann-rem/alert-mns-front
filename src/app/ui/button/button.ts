@@ -1,0 +1,58 @@
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+} from '@angular/core';
+
+/** Style visuel du bouton, aligné sur le design system Figma. */
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+/**
+ * Bouton du design system Alerte.
+ *
+ * S'applique en attribut sur un `<button>` natif, pour rester accessible et
+ * compatible avec les formulaires :
+ *
+ * ```html
+ * <button appButton variant="primary">Se connecter</button>
+ * <button appButton variant="danger" [disabled]="loading()">Anonymiser</button>
+ * ```
+ */
+@Component({
+  selector: 'button[appButton]',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: '<ng-content />',
+  host: {
+    '[class]': 'classes()',
+    '[attr.type]': 'type()',
+    '[attr.disabled]': 'disabled() ? "" : null',
+  },
+})
+export class Button {
+  /** Style visuel. */
+  readonly variant = input<ButtonVariant>('primary');
+  /** Type HTML natif (défaut `button` pour éviter les soumissions accidentelles). */
+  readonly type = input<'button' | 'submit' | 'reset'>('button');
+  /** Désactive le bouton (attribut `disabled` natif + styles). */
+  readonly disabled = input(false, { transform: booleanAttribute });
+
+  private static readonly BASE =
+    'inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md ' +
+    'text-body font-medium select-none transition-colors ' +
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-solid ' +
+    'disabled:opacity-50 disabled:pointer-events-none';
+
+  private static readonly VARIANTS: Record<ButtonVariant, string> = {
+    primary: 'bg-accent-solid text-text-on-accent hover:bg-accent-solid/90',
+    secondary:
+      'bg-surface-default text-text-primary border border-border-default hover:bg-surface-muted',
+    ghost: 'bg-transparent text-text-primary hover:bg-surface-muted',
+    danger: 'bg-danger-solid text-text-on-accent hover:bg-danger-solid/90',
+  };
+
+  protected readonly classes = computed(
+    () => `${Button.BASE} ${Button.VARIANTS[this.variant()]}`,
+  );
+}
