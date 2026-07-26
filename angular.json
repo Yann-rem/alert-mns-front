@@ -30,6 +30,9 @@
               }
             ],
             "styles": [
+              "@fontsource/inter/400.css",
+              "@fontsource/inter/500.css",
+              "@fontsource/inter/600.css",
               "src/tailwind.css",
               "src/styles.scss"
             ]
