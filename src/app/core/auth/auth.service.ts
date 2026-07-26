@@ -2,12 +2,20 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
+/** Rôle métier au sein de l'organisation. */
+export type MemberRole = 'ADMIN' | 'MANAGER' | 'MEMBER';
+
 /** Utilisateur connecté, tel que renvoyé par `GET /api/auth/me`. */
 export interface CurrentUser {
   userId: string;
   email: string;
   firstName: string;
   lastName: string;
+  /** Null si l'utilisateur n'est membre d'aucune organisation. */
+  organisationId: string | null;
+  role: MemberRole | null;
+  memberStatus: string | null;
+  absenceMessage: { content: string; active: boolean } | null;
 }
 
 /** Contexte porté par un lien magique valide (`GET /api/auth/magic-link/validate`). */
@@ -34,6 +42,10 @@ export class AuthService {
   /** Utilisateur connecté, ou `null` si la session n'est pas (encore) établie. */
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
+
+  /** Organisation courante — indispensable pour construire les URLs `/api/organisations/{orgId}/…`. */
+  readonly organisationId = computed(() => this.currentUser()?.organisationId ?? null);
+  readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
 
   /**
    * Ouvre une session. Le backend répond 200 sans corps et pose le cookie de

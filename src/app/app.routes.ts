@@ -22,6 +22,13 @@ export const routes: Routes = [
     title: 'Messages — Alerte',
   },
   {
+    path: 'administration',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/members/admin-members').then((m) => m.AdminMembers),
+    title: 'Administration — Alerte',
+  },
+  {
     path: 'design-system',
     loadComponent: () => import('./features/design-system/showcase').then((m) => m.Showcase),
     title: 'Design system — Alerte',

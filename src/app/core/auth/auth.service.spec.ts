@@ -9,6 +9,10 @@ const USER: CurrentUser = {
   email: 'yannick.remy@mns.fr',
   firstName: 'Yannick',
   lastName: 'Remy',
+  organisationId: 'org-1',
+  role: 'ADMIN',
+  memberStatus: 'ACTIVE',
+  absenceMessage: null,
 };
 
 describe('AuthService', () => {
