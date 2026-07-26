@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Une nouvelle poussée sur la même branche annule le run précédent, encore en cours.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # La version vient de package.json (champ "volta", puis "engines") : une seule
+      # source de vérité entre la machine de développement et le runner.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      # "ci" et non "install" : installe strictement le lockfile et échoue s'il diverge
+      # de package.json. Le .npmrc du dépôt (legacy-peer-deps) est pris en compte.
+      - name: Install dependencies
+        run: npm ci
+
+      # Prettier + ordre des classes Tailwind. Placé en premier car c'est le plus rapide.
+      - name: Check formatting
+        run: npm run format:check
+
+      # Vitest sous jsdom : aucun navigateur à installer sur le runner.
+      - name: Unit tests
+        run: npx ng test --watch=false
+
+      # Build de production : compilation AOT stricte et budgets de taille — attrape les
+      # erreurs de template que les tests unitaires ne couvrent pas.
+      - name: Production build
+        run: npx ng build
