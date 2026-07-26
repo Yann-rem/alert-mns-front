@@ -3,7 +3,7 @@
     <header class="flex items-center justify-between gap-4">
       <div class="flex flex-col gap-1">
         <h1 class="text-title">Design system — Alerte</h1>
-        <p class="text-body text-text-secondary">Button · Badge · Avatar</p>
+        <p class="text-body text-text-secondary">Button · Badge · Avatar · Field · Toggle</p>
       </div>
       <button appButton variant="secondary" (click)="toggleTheme()">
         {{ dark() ? 'Thème clair' : 'Thème sombre' }}
@@ -39,6 +39,27 @@
         <app-avatar initials="JM" size="sm" presence="online" ariaLabel="Julien Meyer" />
         <app-avatar initials="SN" size="md" presence="offline" ariaLabel="Sofia Nkolo" />
         <app-avatar initials="YR" size="lg" ariaLabel="Yannick Remy" />
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <h2 class="text-heading">Field</h2>
+      <div class="flex max-w-sm flex-col gap-3">
+        <input appField placeholder="Adresse e-mail" />
+        <input appField value="rempli@mns.fr" />
+        <input appField placeholder="Désactivé" disabled />
+        <input appField placeholder="E-mail invalide" [invalid]="true" />
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <h2 class="text-heading">Toggle</h2>
+      <div class="flex items-center gap-4">
+        <app-toggle [checked]="notify()" (checkedChange)="notify.set($event)" />
+        <span class="text-body text-text-secondary">
+          Notifications {{ notify() ? 'activées' : 'désactivées' }}
+        </span>
+        <app-toggle [checked]="true" disabled />
       </div>
     </section>
   </div>
