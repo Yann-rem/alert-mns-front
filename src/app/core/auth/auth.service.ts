@@ -75,4 +75,13 @@ export class AuthService {
       .post<void>('/api/auth/logout', {})
       .pipe(tap(() => this.currentUser.set(null)));
   }
+
+  /**
+   * Oublie l'utilisateur courant sans appeler le serveur. Utilisé quand la
+   * session s'avère déjà invalide côté backend (401), auquel cas un appel à
+   * `/logout` n'aurait plus de sens.
+   */
+  clearSession(): void {
+    this.currentUser.set(null);
+  }
 }

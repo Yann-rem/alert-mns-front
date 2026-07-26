@@ -2,11 +2,13 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import {
   provideHttpClient,
   withFetch,
+  withInterceptors,
   withXsrfConfiguration,
 } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
+import { sessionExpiredInterceptor } from './core/auth/session-expired.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,6 +23,7 @@ export const appConfig: ApplicationConfig = {
         cookieName: 'XSRF-TOKEN',
         headerName: 'X-XSRF-TOKEN',
       }),
+      withInterceptors([sessionExpiredInterceptor]),
     ),
   ],
 };

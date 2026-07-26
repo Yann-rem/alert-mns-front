@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/auth/auth.guard';
+
 export const routes: Routes = [
   {
     path: 'connexion',
@@ -16,6 +18,7 @@ export const routes: Routes = [
   },
   {
     path: 'messages',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
     title: 'Messages — Alerte',
   },
