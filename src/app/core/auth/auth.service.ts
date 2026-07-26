@@ -10,6 +10,16 @@ export interface CurrentUser {
   lastName: string;
 }
 
+/** Contexte porté par un lien magique valide (`GET /api/auth/magic-link/validate`). */
+export interface MagicLinkContext {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+/** Longueur minimale imposée par le domaine (VO `RawPassword` côté backend). */
+export const PASSWORD_MIN_LENGTH = 12;
+
 /**
  * Authentification par session (cookie `JSESSIONID` httpOnly posé par Spring
  * Security). Aucun jeton n'est stocké côté client : la session vit dans le
@@ -39,6 +49,24 @@ export class AuthService {
     return this.http
       .get<CurrentUser>('/api/auth/me')
       .pipe(tap((user) => this.currentUser.set(user)));
+  }
+
+  /**
+   * Vérifie un lien magique et renvoie l'identité qu'il désigne.
+   * Le backend répond `410 Gone` si le lien est inconnu, expiré ou déjà consommé.
+   */
+  validateMagicLink(token: string): Observable<MagicLinkContext> {
+    return this.http.get<MagicLinkContext>('/api/auth/magic-link/validate', {
+      params: { token },
+    });
+  }
+
+  /**
+   * Consomme le lien magique en définissant le mot de passe. N'ouvre PAS de
+   * session : l'utilisateur doit ensuite se connecter normalement.
+   */
+  redeemMagicLink(token: string, password: string): Observable<void> {
+    return this.http.post<void>('/api/auth/magic-link/redeem', { token, password });
   }
 
   /** Ferme la session côté serveur et vide l'état local. */

@@ -7,6 +7,14 @@ export const routes: Routes = [
     title: 'Connexion — Alerte',
   },
   {
+    // Chemin imposé par le lien magique construit côté backend
+    // (IssueActivationTokenService : frontendBaseUrl + "/activation?token=…").
+    path: 'activation',
+    loadComponent: () =>
+      import('./features/auth/activation/activation').then((m) => m.Activation),
+    title: 'Activation — Alerte',
+  },
+  {
     path: 'messages',
     loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
     title: 'Messages — Alerte',
