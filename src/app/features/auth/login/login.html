@@ -1,0 +1,74 @@
+<main class="flex min-h-dvh items-center justify-center bg-surface-page p-4">
+  <div class="w-full max-w-sm rounded-lg border border-border-default bg-surface-default p-6 shadow-sm">
+    <!-- En-tête centré (logo + titre + sous-titre), cf. conventions maquettes -->
+    <div class="flex flex-col items-center gap-1">
+      <div class="mb-3 flex items-center gap-2">
+        <svg viewBox="0 0 32 32" class="h-8 w-8" aria-hidden="true">
+          <rect width="32" height="32" rx="8" class="fill-accent-solid" />
+          <path
+            d="M9 12.5h14M9 17h9"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <circle cx="24" cy="9" r="4" class="fill-danger-solid" />
+        </svg>
+        <span class="text-title">Alerte</span>
+      </div>
+      <h1 class="text-heading">Se connecter</h1>
+      <p class="text-body text-text-secondary">Votre espace Metz Numeric School</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 flex flex-col gap-4">
+      @if (errorMessage(); as message) {
+        <p
+          role="alert"
+          class="rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+        >
+          {{ message }}
+        </p>
+      }
+
+      <div class="flex flex-col gap-1.5">
+        <label for="email" class="text-label text-text-secondary">Adresse e-mail</label>
+        <input
+          appField
+          id="email"
+          type="email"
+          autocomplete="email"
+          formControlName="email"
+          placeholder="prenom.nom@mns.fr"
+          [invalid]="form.controls.email.touched && form.controls.email.invalid"
+        />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="text-caption text-danger-text">
+            Saisissez une adresse e-mail valide.
+          </span>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label for="password" class="text-label text-text-secondary">Mot de passe</label>
+        <input
+          appField
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          formControlName="password"
+          [invalid]="form.controls.password.touched && form.controls.password.invalid"
+        />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="text-caption text-danger-text">Saisissez votre mot de passe.</span>
+        }
+      </div>
+
+      <button appButton type="submit" class="w-full" [disabled]="loading()">
+        {{ loading() ? 'Connexion…' : 'Se connecter' }}
+      </button>
+    </form>
+
+    <p class="mt-5 text-center text-caption text-text-muted">
+      Première connexion ? Utilisez le lien reçu par e-mail.
+    </p>
+  </div>
+</main>
