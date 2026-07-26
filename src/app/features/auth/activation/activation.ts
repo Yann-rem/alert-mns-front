@@ -1,11 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -30,9 +24,7 @@ type ActivationStatus = 'validating' | 'ready' | 'expired' | 'error';
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
   const confirmation = group.get('confirmation')?.value;
-  return password && confirmation && password !== confirmation
-    ? { passwordsMismatch: true }
-    : null;
+  return password && confirmation && password !== confirmation ? { passwordsMismatch: true } : null;
 }
 
 /**
@@ -99,8 +91,7 @@ export class Activation implements OnInit {
     this.auth.redeemMagicLink(this.token, this.form.getRawValue().password).subscribe({
       // Le redeem n'ouvre pas de session : on renvoie vers la connexion, en
       // signalant l'activation réussie.
-      next: () =>
-        void this.router.navigate(['/connexion'], { queryParams: { active: 1 } }),
+      next: () => void this.router.navigate(['/connexion'], { queryParams: { active: 1 } }),
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
         if (error.status === 410) {

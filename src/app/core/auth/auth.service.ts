@@ -71,9 +71,7 @@ export class AuthService {
 
   /** Ferme la session côté serveur et vide l'état local. */
   logout(): Observable<void> {
-    return this.http
-      .post<void>('/api/auth/logout', {})
-      .pipe(tap(() => this.currentUser.set(null)));
+    return this.http.post<void>('/api/auth/logout', {}).pipe(tap(() => this.currentUser.set(null)));
   }
 
   /**

@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
 export type AvatarPresence = 'none' | 'online' | 'offline';
@@ -52,13 +47,10 @@ export class Avatar {
     lg: 'w-3 h-3',
   };
 
-  protected readonly classes = computed(
-    () => `${Avatar.BASE} ${Avatar.SIZES[this.size()]}`,
-  );
+  protected readonly classes = computed(() => `${Avatar.BASE} ${Avatar.SIZES[this.size()]}`);
 
   protected readonly dotClasses = computed(() => {
-    const color =
-      this.presence() === 'online' ? 'bg-presence-online' : 'bg-text-muted';
+    const color = this.presence() === 'online' ? 'bg-presence-online' : 'bg-text-muted';
     return `absolute bottom-0 right-0 rounded-full ring-2 ring-surface-default ${Avatar.DOT_SIZES[this.size()]} ${color}`;
   });
 }

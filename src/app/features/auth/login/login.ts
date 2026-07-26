@@ -1,10 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 
@@ -25,8 +21,7 @@ export class Login {
   private readonly route = inject(ActivatedRoute);
 
   /** Vrai quand on arrive juste d'une activation réussie (`/connexion?active=1`). */
-  protected readonly justActivated =
-    this.route.snapshot.queryParamMap.get('active') === '1';
+  protected readonly justActivated = this.route.snapshot.queryParamMap.get('active') === '1';
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

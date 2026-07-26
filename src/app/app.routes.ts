@@ -12,8 +12,7 @@ export const routes: Routes = [
     // Chemin imposé par le lien magique construit côté backend
     // (IssueActivationTokenService : frontendBaseUrl + "/activation?token=…").
     path: 'activation',
-    loadComponent: () =>
-      import('./features/auth/activation/activation').then((m) => m.Activation),
+    loadComponent: () => import('./features/auth/activation/activation').then((m) => m.Activation),
     title: 'Activation — Alerte',
   },
   {
@@ -24,8 +23,7 @@ export const routes: Routes = [
   },
   {
     path: 'design-system',
-    loadComponent: () =>
-      import('./features/design-system/showcase').then((m) => m.Showcase),
+    loadComponent: () => import('./features/design-system/showcase').then((m) => m.Showcase),
     title: 'Design system — Alerte',
   },
   { path: '', pathMatch: 'full', redirectTo: 'connexion' },

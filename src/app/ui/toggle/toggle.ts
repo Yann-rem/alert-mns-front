@@ -1,10 +1,4 @@
-import {
-  booleanAttribute,
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  model,
-} from '@angular/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } from '@angular/core';
 
 /**
  * Interrupteur on/off (design system Alerte).
@@ -25,9 +19,7 @@ import {
       [attr.aria-checked]="checked()"
       [disabled]="disabled()"
       (click)="toggle()"
-      class="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-full transition-colors
-             outline-2 outline-offset-2 outline-transparent focus-visible:outline-accent-solid
-             disabled:opacity-50 disabled:pointer-events-none"
+      class="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-full outline-2 outline-offset-2 outline-transparent transition-colors focus-visible:outline-accent-solid disabled:pointer-events-none disabled:opacity-50"
       [class.bg-accent-solid]="checked()"
       [class.bg-border-strong]="!checked()"
     >

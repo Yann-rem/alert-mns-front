@@ -54,7 +54,5 @@ export class Button {
     danger: 'bg-danger-solid text-text-on-accent hover:bg-danger-solid/90',
   };
 
-  protected readonly classes = computed(
-    () => `${Button.BASE} ${Button.VARIANTS[this.variant()]}`,
-  );
+  protected readonly classes = computed(() => `${Button.BASE} ${Button.VARIANTS[this.variant()]}`);
 }

@@ -1,8 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -151,9 +148,7 @@ describe('Activation', () => {
     submit(fixture);
     await fixture.whenStable();
 
-    http
-      .expectOne('/api/auth/magic-link/redeem')
-      .flush(null, { status: 410, statusText: 'Gone' });
+    http.expectOne('/api/auth/magic-link/redeem').flush(null, { status: 410, statusText: 'Gone' });
     await fixture.whenStable();
 
     expect(text(fixture)).toContain('Lien expiré');

@@ -1,8 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -61,9 +58,7 @@ describe('Login', () => {
     submit(fixture);
     await fixture.whenStable();
 
-    http
-      .expectOne('/api/auth/login')
-      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    http.expectOne('/api/auth/login').flush(null, { status: 401, statusText: 'Unauthorized' });
     await fixture.whenStable();
 
     const alert = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');

@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /** Tonalité sémantique de la pastille. */
 export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
@@ -32,10 +27,7 @@ export class Badge {
     'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-micro font-medium whitespace-nowrap';
 
   /** Classes { fond, texte, bordure } par tonalité. */
-  private static readonly TONES: Record<
-    BadgeTone,
-    { bg: string; text: string; border: string }
-  > = {
+  private static readonly TONES: Record<BadgeTone, { bg: string; text: string; border: string }> = {
     neutral: {
       bg: 'bg-surface-muted',
       text: 'text-text-secondary',

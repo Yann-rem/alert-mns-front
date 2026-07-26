@@ -1,16 +1,13 @@
 <main class="flex min-h-dvh items-center justify-center bg-surface-page p-4">
-  <div class="w-full max-w-sm rounded-lg border border-border-default bg-surface-default p-6 shadow-sm">
+  <div
+    class="w-full max-w-sm rounded-lg border border-border-default bg-surface-default p-6 shadow-sm"
+  >
     <!-- En-tête centré (logo + titre + sous-titre), cf. conventions maquettes -->
     <div class="flex flex-col items-center gap-1">
       <div class="mb-3 flex items-center gap-2">
         <svg viewBox="0 0 32 32" class="h-8 w-8" aria-hidden="true">
           <rect width="32" height="32" rx="8" class="fill-accent-solid" />
-          <path
-            d="M9 12.5h14M9 17h9"
-            stroke="white"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
+          <path d="M9 12.5h14M9 17h9" stroke="white" stroke-width="2" stroke-linecap="round" />
           <circle cx="24" cy="9" r="4" class="fill-danger-solid" />
         </svg>
         <span class="text-title">Alerte</span>
@@ -50,9 +47,7 @@
           [invalid]="form.controls.email.touched && form.controls.email.invalid"
         />
         @if (form.controls.email.touched && form.controls.email.invalid) {
-          <span class="text-caption text-danger-text">
-            Saisissez une adresse e-mail valide.
-          </span>
+          <span class="text-caption text-danger-text"> Saisissez une adresse e-mail valide. </span>
         }
       </div>
 

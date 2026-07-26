@@ -1,5 +1,7 @@
 <main class="flex min-h-dvh items-center justify-center bg-surface-page p-4">
-  <div class="w-full max-w-sm rounded-lg border border-border-default bg-surface-default p-6 shadow-sm">
+  <div
+    class="w-full max-w-sm rounded-lg border border-border-default bg-surface-default p-6 shadow-sm"
+  >
     <!-- En-tête centré (logo + titre + sous-titre), cf. conventions maquettes -->
     <div class="flex flex-col items-center gap-1">
       <div class="mb-3 flex items-center gap-2">
@@ -41,8 +43,7 @@
       <!-- Lien invalide, expiré ou déjà consommé (410) -->
       @case ('expired') {
         <p class="mt-4 text-center text-body text-text-secondary">
-          Ce lien d'activation n'est plus valide. Demandez un nouvel envoi à un
-          administrateur.
+          Ce lien d'activation n'est plus valide. Demandez un nouvel envoi à un administrateur.
         </p>
         <a routerLink="/connexion" class="mt-6 block">
           <button appButton variant="secondary" class="w-full">Retour à la connexion</button>

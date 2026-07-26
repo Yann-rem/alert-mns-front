@@ -1,8 +1,5 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -44,9 +41,7 @@ describe('sessionExpiredInterceptor', () => {
     const failure = new Promise<number>((resolve) =>
       client.get('/api/conversations').subscribe({ error: (e) => resolve(e.status) }),
     );
-    http
-      .expectOne('/api/conversations')
-      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    http.expectOne('/api/conversations').flush(null, { status: 401, statusText: 'Unauthorized' });
 
     // L'erreur reste propagée à l'appelant
     expect(await failure).toBe(401);
@@ -78,9 +73,7 @@ describe('sessionExpiredInterceptor', () => {
     const failure = new Promise<number>((resolve) =>
       client.get('/api/conversations').subscribe({ error: (e) => resolve(e.status) }),
     );
-    http
-      .expectOne('/api/conversations')
-      .flush(null, { status: 500, statusText: 'Server Error' });
+    http.expectOne('/api/conversations').flush(null, { status: 500, statusText: 'Server Error' });
 
     expect(await failure).toBe(500);
     expect(navigate).not.toHaveBeenCalled();
