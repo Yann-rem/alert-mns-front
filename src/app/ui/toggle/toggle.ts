@@ -26,7 +26,7 @@ import {
       [disabled]="disabled()"
       (click)="toggle()"
       class="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-full transition-colors
-             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-solid
+             outline-2 outline-offset-2 outline-transparent focus-visible:outline-accent-solid
              disabled:opacity-50 disabled:pointer-events-none"
       [class.bg-accent-solid]="checked()"
       [class.bg-border-strong]="!checked()"

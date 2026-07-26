@@ -38,10 +38,12 @@ export class Button {
   /** Désactive le bouton (attribut `disabled` natif + styles). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  // Outline toujours déclaré, transparent au repos : seule la couleur s'anime
+  // (sinon la transition part de la valeur par défaut du navigateur → flash).
   private static readonly BASE =
     'inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md ' +
     'text-body font-medium select-none transition-colors ' +
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-solid ' +
+    'outline-2 outline-offset-2 outline-transparent focus-visible:outline-accent-solid ' +
     'disabled:opacity-50 disabled:pointer-events-none';
 
   private static readonly VARIANTS: Record<ButtonVariant, string> = {
