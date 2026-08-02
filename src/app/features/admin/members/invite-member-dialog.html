@@ -1,0 +1,81 @@
+<app-modal
+  [(open)]="open"
+  heading="Inviter un membre"
+  description="La personne recevra un lien d'activation par e-mail."
+>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+    @if (errorMessage(); as message) {
+      <p
+        role="alert"
+        class="rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+      >
+        {{ message }}
+      </p>
+    }
+
+    <div class="flex flex-col gap-1.5">
+      <label for="invite-email" class="text-label text-text-secondary">Adresse e-mail</label>
+      <input
+        appField
+        id="invite-email"
+        type="email"
+        autocomplete="off"
+        formControlName="email"
+        placeholder="prenom.nom@mns.fr"
+        [invalid]="isInvalid('email')"
+      />
+      @if (isInvalid('email')) {
+        <span class="text-caption text-danger-text">Saisissez une adresse e-mail valide.</span>
+      }
+    </div>
+
+    <div class="flex flex-col gap-4 sm:flex-row">
+      <div class="flex flex-1 flex-col gap-1.5">
+        <label for="invite-first-name" class="text-label text-text-secondary">Prénom</label>
+        <input
+          appField
+          id="invite-first-name"
+          autocomplete="off"
+          formControlName="firstName"
+          [invalid]="isInvalid('firstName')"
+        />
+        @if (isInvalid('firstName')) {
+          <span class="text-caption text-danger-text">Le prénom est obligatoire.</span>
+        }
+      </div>
+
+      <div class="flex flex-1 flex-col gap-1.5">
+        <label for="invite-last-name" class="text-label text-text-secondary">Nom</label>
+        <input
+          appField
+          id="invite-last-name"
+          autocomplete="off"
+          formControlName="lastName"
+          [invalid]="isInvalid('lastName')"
+        />
+        @if (isInvalid('lastName')) {
+          <span class="text-caption text-danger-text">Le nom est obligatoire.</span>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="invite-role" class="text-label text-text-secondary">Rôle</label>
+      <select appField id="invite-role" formControlName="role">
+        @for (option of roleOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+      <span class="text-caption text-text-muted">
+        Un gestionnaire peut diffuser des alertes ; un admin gère aussi les membres.
+      </span>
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button appButton variant="secondary" (click)="cancel()">Annuler</button>
+      <button appButton type="submit" [disabled]="loading()">
+        {{ loading() ? 'Envoi…' : 'Inviter' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

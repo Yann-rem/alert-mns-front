@@ -3,12 +3,12 @@
     <header class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-title">Membres</h1>
-        @if (tab() !== 'pending') {
-          <p class="text-caption text-text-muted">{{ total() }} membre(s)</p>
-        } @else {
+        @if (displayedTab() === 'pending') {
           <p class="text-caption text-text-muted">
             {{ invitations().length }} invitation(s) en attente
           </p>
+        } @else if (displayedTab() !== null) {
+          <p class="text-caption text-text-muted">{{ total() }} membre(s)</p>
         }
       </div>
 
@@ -21,9 +21,13 @@
           [value]="search()"
           (input)="onSearch($any($event.target).value)"
         />
-        <button appButton variant="primary">Inviter un membre</button>
+        <button appButton variant="primary" (click)="inviteOpen.set(true)">
+          Inviter un membre
+        </button>
       </div>
     </header>
+
+    <app-invite-member-dialog [(open)]="inviteOpen" (invited)="onInvited()" />
 
     <!-- Onglets -->
     <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrer les membres">
@@ -43,6 +47,15 @@
       }
     </nav>
 
+    @if (successMessage(); as message) {
+      <p
+        role="status"
+        class="mt-4 rounded-md border border-success-text bg-success-subtle px-3 py-2 text-label text-success-text"
+      >
+        {{ message }}
+      </p>
+    }
+
     @if (errorMessage(); as message) {
       <p
         role="alert"
@@ -50,103 +63,68 @@
       >
         {{ message }}
       </p>
-    } @else if (loading()) {
-      <p class="mt-6 text-body text-text-secondary" role="status">Chargement…</p>
-    } @else if (tab() === 'pending') {
-      <!-- Invitations en attente -->
-      @if (invitations().length === 0) {
-        <p class="mt-6 text-body text-text-secondary">Aucune invitation en attente.</p>
-      } @else {
-        <ul class="mt-4 flex flex-col gap-2">
-          @for (invitation of invitations(); track invitation.invitationId) {
-            <li
-              class="flex flex-wrap items-center gap-3 rounded-lg border border-border-default bg-surface-default p-3"
-            >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-body font-medium">
-                  {{ invitation.firstName }} {{ invitation.lastName }}
-                </p>
-                <p class="truncate text-caption text-text-muted">{{ invitation.email }}</p>
-              </div>
-              <app-badge tone="neutral" variant="outline">
-                {{ roleLabel(invitation.role) }}
-              </app-badge>
-              <app-badge [tone]="invitation.expired ? 'danger' : 'warning'">
-                {{ invitation.expired ? 'Expirée' : 'En attente' }}
-              </app-badge>
-            </li>
-          }
-        </ul>
+    } @else if (displayedTab() === null) {
+      <!-- Premier chargement : rien à estomper, l'indicateur n'apparaît qu'au-delà du seuil. -->
+      @if (showLoader()) {
+        <p class="mt-6 text-body text-text-secondary" role="status">Chargement…</p>
       }
-    } @else if (members().length === 0) {
-      <p class="mt-6 text-body text-text-secondary">
-        Aucun membre ne correspond à cette recherche.
-      </p>
     } @else {
-      <!-- Mobile : cartes -->
-      <ul class="mt-4 flex flex-col gap-2 md:hidden">
-        @for (member of members(); track member.memberId) {
-          <li class="rounded-lg border border-border-default bg-surface-default p-3">
-            <div class="flex items-center gap-3">
-              <app-avatar [initials]="initials(member)" size="md" [ariaLabel]="fullName(member)" />
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-body font-medium">{{ fullName(member) }}</p>
-                <p class="truncate text-caption text-text-muted">{{ member.email }}</p>
-              </div>
-            </div>
-            <div class="mt-2 flex flex-wrap gap-1.5">
-              <app-badge tone="neutral" variant="outline">{{ roleLabel(member.role) }}</app-badge>
-              @if (member.anonymized) {
-                <app-badge tone="neutral">Anonymisé</app-badge>
-              } @else if (member.memberStatus === 'SUSPENDED') {
-                <app-badge tone="danger">Suspendu</app-badge>
-              } @else {
-                <app-badge tone="success">Actif</app-badge>
-              }
-            </div>
-          </li>
-        }
-      </ul>
-
-      <!-- Desktop : tableau -->
+      <!-- Contenu déjà chargé : il reste visible, estompé, pendant le rafraîchissement. -->
       <div
-        class="mt-4 hidden overflow-x-auto rounded-lg border border-border-default bg-surface-default md:block"
+        [class.opacity-50]="pending()"
+        [attr.aria-busy]="pending() ? 'true' : null"
+        class="transition-opacity"
       >
-        <table class="w-full text-body">
-          <caption class="sr-only">
-            Membres de l'organisation
-          </caption>
-          <thead
-            class="border-b border-border-default bg-surface-muted text-left text-micro text-text-muted"
-          >
-            <tr>
-              <th scope="col" class="px-4 py-2 font-medium">Membre</th>
-              <th scope="col" class="px-4 py-2 font-medium">Rôle</th>
-              <th scope="col" class="px-4 py-2 font-medium">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (member of members(); track member.memberId) {
-              <tr class="border-b border-border-default last:border-0">
-                <td class="px-4 py-2">
-                  <div class="flex items-center gap-3">
-                    <app-avatar
-                      [initials]="initials(member)"
-                      size="sm"
-                      [ariaLabel]="fullName(member)"
-                    />
-                    <div class="min-w-0">
-                      <p class="truncate font-medium">{{ fullName(member) }}</p>
-                      <p class="truncate text-caption text-text-muted">{{ member.email }}</p>
-                    </div>
+        @if (displayedTab() === 'pending') {
+          <!-- Invitations en attente -->
+          @if (invitations().length === 0) {
+            <p class="mt-6 text-body text-text-secondary">Aucune invitation en attente.</p>
+          } @else {
+            <ul class="mt-4 flex flex-col gap-2">
+              @for (invitation of invitations(); track invitation.invitationId) {
+                <li
+                  class="flex flex-wrap items-center gap-3 rounded-lg border border-border-default bg-surface-default p-3"
+                >
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-body font-medium">
+                      {{ invitation.firstName }} {{ invitation.lastName }}
+                    </p>
+                    <p class="truncate text-caption text-text-muted">{{ invitation.email }}</p>
                   </div>
-                </td>
-                <td class="px-4 py-2">
+                  <app-badge tone="neutral" variant="outline">
+                    {{ roleLabel(invitation.role) }}
+                  </app-badge>
+                  <app-badge [tone]="invitation.expired ? 'danger' : 'warning'">
+                    {{ invitation.expired ? 'Expirée' : 'En attente' }}
+                  </app-badge>
+                </li>
+              }
+            </ul>
+          }
+        } @else if (members().length === 0) {
+          <p class="mt-6 text-body text-text-secondary">
+            Aucun membre ne correspond à cette recherche.
+          </p>
+        } @else {
+          <!-- Mobile : cartes -->
+          <ul class="mt-4 flex flex-col gap-2 md:hidden">
+            @for (member of members(); track member.memberId) {
+              <li class="rounded-lg border border-border-default bg-surface-default p-3">
+                <div class="flex items-center gap-3">
+                  <app-avatar
+                    [initials]="initials(member)"
+                    size="md"
+                    [ariaLabel]="fullName(member)"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-body font-medium">{{ fullName(member) }}</p>
+                    <p class="truncate text-caption text-text-muted">{{ member.email }}</p>
+                  </div>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-1.5">
                   <app-badge tone="neutral" variant="outline">{{
                     roleLabel(member.role)
                   }}</app-badge>
-                </td>
-                <td class="px-4 py-2">
                   @if (member.anonymized) {
                     <app-badge tone="neutral">Anonymisé</app-badge>
                   } @else if (member.memberStatus === 'SUSPENDED') {
@@ -154,11 +132,64 @@
                   } @else {
                     <app-badge tone="success">Actif</app-badge>
                   }
-                </td>
-              </tr>
+                </div>
+              </li>
             }
-          </tbody>
-        </table>
+          </ul>
+
+          <!-- Desktop : tableau -->
+          <div
+            class="mt-4 hidden overflow-x-auto rounded-lg border border-border-default bg-surface-default md:block"
+          >
+            <table class="w-full text-body">
+              <caption class="sr-only">
+                Membres de l'organisation
+              </caption>
+              <thead
+                class="border-b border-border-default bg-surface-muted text-left text-micro text-text-muted"
+              >
+                <tr>
+                  <th scope="col" class="px-4 py-2 font-medium">Membre</th>
+                  <th scope="col" class="px-4 py-2 font-medium">Rôle</th>
+                  <th scope="col" class="px-4 py-2 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (member of members(); track member.memberId) {
+                  <tr class="border-b border-border-default last:border-0">
+                    <td class="px-4 py-2">
+                      <div class="flex items-center gap-3">
+                        <app-avatar
+                          [initials]="initials(member)"
+                          size="sm"
+                          [ariaLabel]="fullName(member)"
+                        />
+                        <div class="min-w-0">
+                          <p class="truncate font-medium">{{ fullName(member) }}</p>
+                          <p class="truncate text-caption text-text-muted">{{ member.email }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2">
+                      <app-badge tone="neutral" variant="outline">{{
+                        roleLabel(member.role)
+                      }}</app-badge>
+                    </td>
+                    <td class="px-4 py-2">
+                      @if (member.anonymized) {
+                        <app-badge tone="neutral">Anonymisé</app-badge>
+                      } @else if (member.memberStatus === 'SUSPENDED') {
+                        <app-badge tone="danger">Suspendu</app-badge>
+                      } @else {
+                        <app-badge tone="success">Actif</app-badge>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     }
   </div>

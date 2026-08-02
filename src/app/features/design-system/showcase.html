@@ -3,7 +3,9 @@
     <header class="flex items-center justify-between gap-4">
       <div class="flex flex-col gap-1">
         <h1 class="text-title">Design system — Alerte</h1>
-        <p class="text-body text-text-secondary">Button · Badge · Avatar · Field · Toggle</p>
+        <p class="text-body text-text-secondary">
+          Button · Badge · Avatar · Field · Modal · Toggle
+        </p>
       </div>
       <button appButton variant="secondary" (click)="toggleTheme()">
         {{ dark() ? 'Thème clair' : 'Thème sombre' }}
@@ -49,7 +51,30 @@
         <input appField value="rempli@mns.fr" />
         <input appField placeholder="Désactivé" disabled />
         <input appField placeholder="E-mail invalide" [invalid]="true" />
+        <select appField>
+          <option>Membre</option>
+          <option>Administrateur</option>
+        </select>
       </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <h2 class="text-heading">Modal</h2>
+      <div>
+        <button appButton variant="secondary" (click)="modalOpen.set(true)">
+          Ouvrir la modale
+        </button>
+      </div>
+      <app-modal
+        [(open)]="modalOpen"
+        heading="Titre"
+        description="Description de l'action à confirmer."
+      >
+        <div class="flex justify-end gap-2">
+          <button appButton variant="secondary" (click)="modalOpen.set(false)">Annuler</button>
+          <button appButton variant="primary" (click)="modalOpen.set(false)">Confirmer</button>
+        </div>
+      </app-modal>
     </section>
 
     <section class="flex flex-col gap-3">

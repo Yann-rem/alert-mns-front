@@ -3,17 +3,19 @@ import { booleanAttribute, computed, Directive, input } from '@angular/core';
 /**
  * Champ de saisie du design system Alerte.
  *
- * Directive appliquée sur un `<input>` natif : l'intégration aux formulaires
- * (ngModel / Reactive Forms) reste native, et les états focus / disabled /
- * readonly sont gérés par les pseudo-classes.
+ * Directive appliquée sur un `<input>` ou un `<select>` natif : l'intégration
+ * aux formulaires (ngModel / Reactive Forms) reste native, et les états focus /
+ * disabled / readonly sont gérés par les pseudo-classes. Le `<select>` conserve
+ * sa flèche native — aucun composant Select n'existe dans le design system.
  *
  * ```html
  * <input appField placeholder="Adresse e-mail" />
  * <input appField [invalid]="emailCtrl.invalid" formControlName="email" />
+ * <select appField formControlName="role">…</select>
  * ```
  */
 @Directive({
-  selector: 'input[appField]',
+  selector: 'input[appField], select[appField]',
   host: {
     '[class]': 'classes()',
     '[attr.aria-invalid]': 'invalid() || null',

@@ -7,6 +7,18 @@ import { AuthService, type MemberRole } from '../auth/auth.service';
 /** Statut d'adhésion, orthogonal au statut du compte utilisateur (ADR-0019). */
 export type MemberStatus = 'ACTIVE' | 'SUSPENDED';
 
+/**
+ * Libellés d'interface des rôles.
+ *
+ * <p>Volontairement courts : ils vivent dans des pastilles. Ce que chaque rôle
+ * permet s'explique là où il y a la place de le dire, pas dans un badge.</p>
+ */
+export const ROLE_LABELS: Readonly<Record<MemberRole, string>> = {
+  ADMIN: 'Admin',
+  MANAGER: 'Gestionnaire',
+  MEMBER: 'Membre',
+};
+
 /** Membre de l'organisation, enrichi de son identité par le backend. */
 export interface MemberSummary {
   memberId: string;
