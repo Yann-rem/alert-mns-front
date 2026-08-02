@@ -1,10 +1,13 @@
 import { Routes } from '@angular/router';
 
+import { adminGuard } from './core/auth/admin.guard';
 import { authGuard } from './core/auth/auth.guard';
+import { guestGuard } from './core/auth/guest.guard';
 
 export const routes: Routes = [
   {
     path: 'connexion',
+    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
     title: 'Connexion — Alerte',
   },
@@ -23,7 +26,9 @@ export const routes: Routes = [
   },
   {
     path: 'administration',
-    canActivate: [authGuard],
+    // adminGuard seul : il couvre déjà l'authentification. Le composer avec
+    // authGuard déclencherait deux appels à /me, les gardes étant parallèles.
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/admin/members/admin-members').then((m) => m.AdminMembers),
     title: 'Administration — Alerte',

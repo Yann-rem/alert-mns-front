@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 
 /** Rôle métier au sein de l'organisation. */
 export type MemberRole = 'ADMIN' | 'MANAGER' | 'MEMBER';
@@ -61,6 +61,20 @@ export class AuthService {
     return this.http
       .get<CurrentUser>('/api/auth/me')
       .pipe(tap((user) => this.currentUser.set(user)));
+  }
+
+  /**
+   * Garantit que l'utilisateur courant est connu, en interrogeant le serveur
+   * seulement si nécessaire.
+   *
+   * <p>C'est le point d'entrée des gardes de route : ils ne peuvent pas se fier
+   * à l'état applicatif, vide après un rechargement de page alors que le cookie
+   * de session, lui, survit. L'erreur est propagée quand aucune session n'est
+   * ouverte — au garde d'en décider.</p>
+   */
+  ensureCurrentUser(): Observable<CurrentUser> {
+    const known = this.currentUser();
+    return known ? of(known) : this.loadCurrentUser();
   }
 
   /**

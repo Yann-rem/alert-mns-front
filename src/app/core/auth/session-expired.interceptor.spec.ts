@@ -1,7 +1,7 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, UrlTree } from '@angular/router';
 import { vi } from 'vitest';
 
 import { AuthService } from './auth.service';
@@ -22,10 +22,15 @@ describe('sessionExpiredInterceptor', () => {
     });
     http = TestBed.inject(HttpTestingController);
     client = TestBed.inject(HttpClient);
-    navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true as never);
   });
 
   afterEach(() => http.verify());
+
+  /** L'intercepteur navigue par arbre d'URL : on le resérialise pour l'asserter. */
+  function navigatedTo(): string {
+    return TestBed.inject(Router).serializeUrl(navigate.mock.calls[0][0] as UrlTree);
+  }
 
   it('401 sur une ressource protégée : vide la session et redirige', async () => {
     const auth = TestBed.inject(AuthService);
@@ -45,8 +50,21 @@ describe('sessionExpiredInterceptor', () => {
 
     // L'erreur reste propagée à l'appelant
     expect(await failure).toBe(401);
-    expect(navigate).toHaveBeenCalledWith(['/connexion']);
+    expect(navigatedTo()).toBe('/connexion');
     expect(auth.isAuthenticated()).toBe(false);
+  });
+
+  it('mémorise l’écran quitté quand la session expire en cours de route', async () => {
+    // Le routeur de test n'a aucune route : on simule l'écran courant.
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/administration');
+
+    const failure = new Promise<number>((resolve) =>
+      client.get('/api/conversations').subscribe({ error: (e) => resolve(e.status) }),
+    );
+    http.expectOne('/api/conversations').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(await failure).toBe(401);
+    expect(navigatedTo()).toBe('/connexion?returnUrl=%2Fadministration');
   });
 
   it('401 sur /login : ne redirige pas (identifiants incorrects)', async () => {

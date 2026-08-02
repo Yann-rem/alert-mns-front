@@ -5,6 +5,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import {
+  DEFAULT_LANDING_URL,
+  RETURN_URL_PARAM,
+  safeReturnUrl,
+} from '../../../core/auth/return-url';
 import { Button } from '../../../ui/button/button';
 import { Field } from '../../../ui/field/field';
 
@@ -22,6 +27,10 @@ export class Login {
 
   /** Vrai quand on arrive juste d'une activation réussie (`/connexion?active=1`). */
   protected readonly justActivated = this.route.snapshot.queryParamMap.get('active') === '1';
+
+  /** Écran refusé par le garde, où l'on ramène l'utilisateur une fois connecté. */
+  private readonly returnUrl =
+    safeReturnUrl(this.route.snapshot.queryParamMap.get(RETURN_URL_PARAM)) ?? DEFAULT_LANDING_URL;
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -49,7 +58,7 @@ export class Login {
       .subscribe({
         next: () => {
           this.loading.set(false);
-          void this.router.navigate(['/messages']);
+          void this.router.navigateByUrl(this.returnUrl);
         },
         error: (error: HttpErrorResponse) => {
           this.loading.set(false);

@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import {
   ActivatedRouteSnapshot,
+  convertToParamMap,
   provideRouter,
   Router,
   RouterStateSnapshot,
@@ -10,8 +11,8 @@ import {
 } from '@angular/router';
 import { firstValueFrom, Observable } from 'rxjs';
 
-import { authGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { guestGuard } from './guest.guard';
 
 const USER = {
   userId: 'u-1',
@@ -20,7 +21,7 @@ const USER = {
   lastName: 'Remy',
 };
 
-describe('authGuard', () => {
+describe('guestGuard', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
@@ -30,10 +31,10 @@ describe('authGuard', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  /** Exécute le garde dans un contexte d'injection et normalise le résultat. */
-  function run(requestedUrl = '/administration'): Promise<boolean | UrlTree> {
+  function run(queryParams: Record<string, string> = {}): Promise<boolean | UrlTree> {
+    const route = { queryParamMap: convertToParamMap(queryParams) } as ActivatedRouteSnapshot;
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as ActivatedRouteSnapshot, { url: requestedUrl } as RouterStateSnapshot),
+      guestGuard(route, {} as RouterStateSnapshot),
     );
     return firstValueFrom(result as Observable<boolean | UrlTree>);
   }
@@ -42,7 +43,7 @@ describe('authGuard', () => {
     return TestBed.inject(Router).serializeUrl(result as UrlTree);
   }
 
-  it('autorise sans requête quand l’utilisateur est déjà chargé', async () => {
+  it('redirige sans requête quand l’utilisateur est déjà chargé', async () => {
     const auth = TestBed.inject(AuthService);
     auth.loadCurrentUser().subscribe();
     http.expectOne('/api/auth/me').flush(USER);
@@ -50,36 +51,41 @@ describe('authGuard', () => {
     const promise = run();
     http.expectNone('/api/auth/me');
 
-    expect(await promise).toBe(true);
+    expect(serialize(await promise)).toBe('/messages');
     http.verify();
   });
 
-  it('interroge /me après rechargement de page et autorise si la session est valide', async () => {
+  it('redirige après rechargement de page si le cookie de session est encore valide', async () => {
     const promise = run();
     http.expectOne('/api/auth/me').flush(USER);
 
-    expect(await promise).toBe(true);
-    expect(TestBed.inject(AuthService).isAuthenticated()).toBe(true);
-    http.verify();
-  });
-
-  it('redirige vers /connexion en mémorisant la destination refusée (401)', async () => {
-    const promise = run('/administration');
-    http.expectOne('/api/auth/me').flush(null, { status: 401, statusText: 'Unauthorized' });
-
     const result = await promise;
     expect(result).toBeInstanceOf(UrlTree);
-    expect(serialize(result)).toBe('/connexion?returnUrl=%2Fadministration');
+    expect(serialize(result)).toBe('/messages');
     http.verify();
   });
 
-  it('conserve les paramètres de la destination refusée', async () => {
-    const promise = run('/administration?onglet=pending');
+  it('laisse passer le visiteur anonyme (401)', async () => {
+    const promise = run();
     http.expectOne('/api/auth/me').flush(null, { status: 401, statusText: 'Unauthorized' });
 
-    expect(serialize(await promise)).toBe(
-      '/connexion?returnUrl=%2Fadministration%3Fonglet%3Dpending',
-    );
+    expect(await promise).toBe(true);
+    http.verify();
+  });
+
+  it('honore la destination mémorisée plutôt que l’accueil', async () => {
+    const promise = run({ returnUrl: '/administration' });
+    http.expectOne('/api/auth/me').flush(USER);
+
+    expect(serialize(await promise)).toBe('/administration');
+    http.verify();
+  });
+
+  it('ignore une destination externe et retombe sur l’accueil', async () => {
+    const promise = run({ returnUrl: 'https://faux-alerte.example/connexion' });
+    http.expectOne('/api/auth/me').flush(USER);
+
+    expect(serialize(await promise)).toBe('/messages');
     http.verify();
   });
 });

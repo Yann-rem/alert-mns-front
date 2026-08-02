@@ -3,6 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { AuthService } from './auth.service';
+import { loginUrlTree } from './return-url';
 
 /**
  * Protège les routes nécessitant une session ouverte.
@@ -11,18 +12,16 @@ import { AuthService } from './auth.service';
  * l'état applicatif est vide alors que la session peut être parfaitement
  * valide. Le garde ne peut donc pas se contenter de l'état local — il
  * interroge le serveur, seul détenteur de la vérité.</p>
+ *
+ * <p>La destination refusée est mémorisée dans l'URL de connexion : un lien
+ * profond reçu par e-mail doit rester exploitable après authentification.</p>
  */
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  // Déjà résolu pendant cette session applicative : pas d'aller-retour inutile.
-  if (auth.isAuthenticated()) {
-    return of(true);
-  }
-
-  return auth.loadCurrentUser().pipe(
+  return auth.ensureCurrentUser().pipe(
     map(() => true as const),
-    catchError(() => of(router.createUrlTree(['/connexion']))),
+    catchError(() => of(loginUrlTree(router, state.url))),
   );
 };

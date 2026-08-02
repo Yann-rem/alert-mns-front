@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 import { AuthService } from './auth.service';
+import { loginUrlTree } from './return-url';
 
 /**
  * Endpoints où un 401 ne signifie PAS « session expirée » :
@@ -17,6 +18,9 @@ const IGNORED = ['/api/auth/login', '/api/auth/magic-link/', '/api/auth/me'];
 
 /**
  * Redirige vers la connexion lorsqu'une session expire en cours d'utilisation.
+ *
+ * <p>L'écran quitté est mémorisé au passage : une session qui expire ne doit pas
+ * coûter à l'utilisateur le chemin qu'il avait parcouru pour y arriver.</p>
  *
  * <p>L'erreur est tout de même propagée : l'appelant reste libre d'afficher son
  * propre message ou d'annuler un traitement en cours.</p>
@@ -34,7 +38,7 @@ export const sessionExpiredInterceptor: HttpInterceptorFn = (request, next) => {
 
       if (isSessionExpired) {
         auth.clearSession();
-        void router.navigate(['/connexion']);
+        void router.navigateByUrl(loginUrlTree(router, router.url));
       }
 
       return throwError(() => error);
