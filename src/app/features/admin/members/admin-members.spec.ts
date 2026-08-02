@@ -132,4 +132,42 @@ describe('AdminMembers', () => {
     expect(text(fixture)).toContain('Aucun membre');
     http.verify();
   });
+
+  it('chargement bref : ni indicateur, ni fausse annonce de liste vide', async () => {
+    const fixture = await setup();
+    // Requête en vol, seuil d'affichage non atteint : la zone reste muette.
+    expect(text(fixture)).not.toContain('Chargement');
+    expect(text(fixture)).not.toContain('Aucun membre');
+
+    http.expectOne((r) => r.url === MEMBERS_URL).flush({ items: [], total: 0, page: 0, size: 50 });
+    await fixture.whenStable();
+
+    expect(text(fixture)).toContain('Aucun membre');
+    http.verify();
+  });
+
+  it('changement d’onglet : la liste précédente reste affichée pendant le rechargement', async () => {
+    const fixture = await setup();
+    http
+      .expectOne((r) => r.url === MEMBERS_URL)
+      .flush({ items: [MEMBER], total: 1, page: 0, size: 50 });
+    await fixture.whenStable();
+
+    const pending = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((b) => b.textContent?.includes('En attente'))!;
+    pending.click();
+    await fixture.whenStable();
+
+    // La bascule n'a pas encore eu lieu : pas de trou, pas de « aucune invitation ».
+    expect(text(fixture)).toContain('Sofia Nkolo');
+    expect(text(fixture)).not.toContain('Aucune invitation');
+
+    http.expectOne(`/api/organisations/${ORG}/invitations`).flush([]);
+    await fixture.whenStable();
+
+    expect(text(fixture)).toContain('Aucune invitation');
+    expect(text(fixture)).not.toContain('Sofia Nkolo');
+    http.verify();
+  });
 });
