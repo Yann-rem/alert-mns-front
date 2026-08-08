@@ -134,16 +134,14 @@ describe('AlertBanner', () => {
   it('écarter une alerte révèle la suivante et mémorise le rejet', async () => {
     const fixture = await setup();
 
-    http
-      .expectOne(ALERTS_URL)
-      .flush([
-        alert({
-          alertId: 'a-2',
-          content: 'Seconde',
-          issuedAt: new Date(Date.now() - 60_000).toISOString(),
-        }),
-        alert({ alertId: 'a-1', content: 'Première' }),
-      ]);
+    http.expectOne(ALERTS_URL).flush([
+      alert({
+        alertId: 'a-2',
+        content: 'Seconde',
+        issuedAt: new Date(Date.now() - 60_000).toISOString(),
+      }),
+      alert({ alertId: 'a-1', content: 'Première' }),
+    ]);
     await fixture.whenStable();
 
     expect(text(fixture)).toContain('Première');
