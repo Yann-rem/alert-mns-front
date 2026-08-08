@@ -7,6 +7,7 @@ import {
   type Alert,
   type AlertLevel,
 } from '../../../core/alerting/alerting.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { Badge, type BadgeTone } from '../../../ui/badge/badge';
 import { Button } from '../../../ui/button/button';
@@ -21,8 +22,15 @@ import { Button } from '../../../ui/button/button';
  */
 const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** Clé de stockage des alertes déjà écartées. Ne contient que des identifiants, aucune donnée personnelle. */
-const DISMISSED_STORAGE_KEY = 'alerte.dismissed-alerts';
+/**
+ * Préfixe de stockage des alertes déjà écartées. Ne contient que des identifiants d'alerte, aucune
+ * donnée personnelle.
+ *
+ * <p>La clé est <b>suffixée par l'utilisateur</b> : `localStorage` est cloisonné par origine, pas
+ * par compte. Sans ce suffixe, deux comptes ouverts dans le même navigateur partagent leurs rejets
+ * — écarter une alerte côté admin la ferait disparaître côté gestionnaire.</p>
+ */
+const DISMISSED_STORAGE_PREFIX = 'alerte.dismissed-alerts';
 
 /**
  * Nombre d'identifiants écartés conservés.
@@ -59,14 +67,21 @@ const LEVEL_SKINS: Readonly<Record<AlertLevel, string>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Badge, Button],
   templateUrl: './alert-banner.html',
+  // L'écran hôte est une colonne flex de hauteur fixe : sans cela, le bandeau serait le seul
+  // élément compressible et se ferait écraser par le fil de discussion.
+  host: { class: 'shrink-0' },
 })
 export class AlertBanner {
   private readonly alerting = inject(AlertingService);
   private readonly realtime = inject(RealtimeService);
+  private readonly auth = inject(AuthService);
+
+  /** Le bandeau vit derrière un garde : la session est déjà résolue quand il se monte. */
+  private readonly storageKey = `${DISMISSED_STORAGE_PREFIX}.${this.auth.user()?.userId ?? 'anonyme'}`;
 
   /** De la plus récente à la plus ancienne, déjà filtrées sur la fenêtre de fraîcheur. */
   private readonly alerts = signal<Alert[]>([]);
-  private readonly dismissed = signal<ReadonlySet<string>>(AlertBanner.readDismissed());
+  private readonly dismissed = signal<ReadonlySet<string>>(this.readDismissed());
 
   protected readonly current = computed(() => {
     const dismissed = this.dismissed();
@@ -97,7 +112,7 @@ export class AlertBanner {
     const next = new Set(this.dismissed());
     next.add(alertId);
     this.dismissed.set(next);
-    AlertBanner.persist(next);
+    this.persist(next);
   }
 
   protected levelLabel(level: AlertLevel): string {
@@ -128,9 +143,9 @@ export class AlertBanner {
       .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
   }
 
-  private static readDismissed(): ReadonlySet<string> {
+  private readDismissed(): ReadonlySet<string> {
     try {
-      const raw = localStorage.getItem(DISMISSED_STORAGE_KEY);
+      const raw = localStorage.getItem(this.storageKey);
       return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
     } catch {
       // Stockage indisponible ou corrompu : on repart d'une ardoise vierge plutôt que d'échouer.
@@ -138,10 +153,10 @@ export class AlertBanner {
     }
   }
 
-  private static persist(dismissed: ReadonlySet<string>): void {
+  private persist(dismissed: ReadonlySet<string>): void {
     try {
       const kept = [...dismissed].slice(-DISMISSED_MAX);
-      localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(kept));
+      localStorage.setItem(this.storageKey, JSON.stringify(kept));
     } catch {
       /* rejet non mémorisé : sans conséquence sur la session en cours */
     }

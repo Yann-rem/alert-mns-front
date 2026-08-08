@@ -4,10 +4,14 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { RealtimeService, type AlertNotification } from '../../../core/realtime/realtime.service';
 import { AlertBanner } from './alert-banner';
 
 const ALERTS_URL = '/api/alerting/alerts';
+const USER_ID = 'u-1';
+/** `localStorage` est cloisonné par origine, pas par compte : la clé porte l'utilisateur. */
+const DISMISSED_KEY = `alerte.dismissed-alerts.${USER_ID}`;
 
 /** Le vrai service ouvrirait un WebSocket : on n'en garde que le flux entrant. */
 class RealtimeStub {
@@ -37,8 +41,10 @@ describe('AlertBanner', () => {
   let http: HttpTestingController;
   let realtime: RealtimeStub;
 
-  async function setup(): Promise<ComponentFixture<AlertBanner>> {
-    localStorage.clear();
+  async function setup(clearStorage = true): Promise<ComponentFixture<AlertBanner>> {
+    if (clearStorage) {
+      localStorage.clear();
+    }
     realtime = new RealtimeStub();
 
     await TestBed.configureTestingModule({
@@ -51,6 +57,21 @@ describe('AlertBanner', () => {
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
+
+    // La session est résolue par le garde avant que l'écran hôte ne monte le bandeau.
+    TestBed.inject(AuthService).loadCurrentUser().subscribe();
+    http.expectOne('/api/auth/me').flush({
+      userId: USER_ID,
+      email: 'jane.smith@example.com',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      memberId: 'm-1',
+      organisationId: 'org-1',
+      role: 'MANAGER',
+      memberStatus: 'ACTIVE',
+      absenceMessage: null,
+    });
+
     const fixture = TestBed.createComponent(AlertBanner);
     await fixture.whenStable();
     return fixture;
@@ -151,7 +172,21 @@ describe('AlertBanner', () => {
 
     expect(text(fixture)).toContain('Seconde');
     expect(text(fixture)).not.toContain('Première');
-    expect(localStorage.getItem('alerte.dismissed-alerts')).toContain('a-1');
+    expect(localStorage.getItem(DISMISSED_KEY)).toContain('a-1');
+    http.verify();
+  });
+
+  it('ne subit pas les rejets d’un autre compte du même navigateur', async () => {
+    // Un admin a écarté cette alerte depuis le même navigateur, sous sa propre clé.
+    localStorage.clear();
+    localStorage.setItem('alerte.dismissed-alerts.u-admin', JSON.stringify(['a-1']));
+
+    // `setup` ne nettoie pas ici, sinon la clé qu'on vient de poser disparaîtrait.
+    const fixture = await setup(false);
+    http.expectOne(ALERTS_URL).flush([alert({ alertId: 'a-1', content: 'Évacuation' })]);
+    await fixture.whenStable();
+
+    expect(text(fixture)).toContain('Évacuation');
     http.verify();
   });
 
