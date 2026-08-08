@@ -5,7 +5,7 @@ import {
   withInterceptors,
   withXsrfConfiguration,
 } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import { sessionExpiredInterceptor } from './core/auth/session-expired.interceptor';
@@ -13,7 +13,9 @@ import { sessionExpiredInterceptor } from './core/auth/session-expired.intercept
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // Les paramètres de route alimentent directement les `input()` des composants
+    // (ex. `/messages/:conversationId`), sans injecter ActivatedRoute.
+    provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
       withFetch(),
       // Noms explicites pour documenter le contrat avec Spring Security :

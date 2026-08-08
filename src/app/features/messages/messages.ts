@@ -1,61 +1,335 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
+import {
+  MESSAGE_MAX_LENGTH,
+  MessagingService,
+  type Conversation,
+  type Message,
+} from '../../core/messaging/messaging.service';
+import {
+  RealtimeService,
+  type MessageNotification,
+  type TypingNotification,
+} from '../../core/messaging/realtime.service';
 import { Avatar } from '../../ui/avatar/avatar';
 import { Button } from '../../ui/button/button';
 
 /**
- * Page provisoire d'atterrissage après connexion.
+ * Durée de vie d'un indicateur de frappe.
  *
- * TODO : remplacer par le véritable écran Messages (liste des conversations
- * + fil de discussion temps réel). Elle sert pour l'instant à vérifier que la
- * session et `GET /api/auth/me` fonctionnent de bout en bout.
+ * <p>Aucun signal « a cessé d'écrire » n'existe : l'indicateur s'éteint tout seul. Le délai doit
+ * dépasser la période d'émission (2 s) pour qu'une frappe continue ne le fasse pas clignoter.</p>
+ */
+const TYPING_TTL_MS = 4_000;
+
+/**
+ * Messagerie : liste des conversations et fil de la conversation ouverte.
+ *
+ * <p>Sur mobile, un seul panneau à la fois — la liste, puis le fil. Au-delà de 768 px, les deux
+ * cohabitent. La conversation ouverte vit dans l'URL (`/messages/:conversationId`) et non dans un
+ * signal local : un lien vers une conversation doit rester partageable, et le retour arrière du
+ * navigateur doit faire ce qu'on en attend.</p>
+ *
+ * <p>Un message envoyé n'est <b>pas</b> ajouté localement : le serveur le repousse à tous les
+ * participants, <b>auteur compris</b>. Une insertion optimiste ferait doublon.</p>
  */
 @Component({
   selector: 'app-messages',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Button],
-  template: `
-    <main class="flex min-h-dvh items-center justify-center bg-surface-page p-4">
-      <div
-        class="flex w-full max-w-sm flex-col items-center gap-4 rounded-lg border border-border-default bg-surface-default p-6 text-center"
-      >
-        @if (user(); as u) {
-          <app-avatar
-            [initials]="initials(u.firstName, u.lastName)"
-            size="lg"
-            [ariaLabel]="u.firstName + ' ' + u.lastName"
-          />
-          <div class="flex flex-col gap-1">
-            <p class="text-heading">Bonjour {{ u.firstName }}</p>
-            <p class="text-body text-text-secondary">{{ u.email }}</p>
-          </div>
-          <p class="text-caption text-text-muted">
-            Connexion réussie. L'écran Messages arrive bientôt.
-          </p>
-          <button appButton variant="secondary" (click)="logout()">Se déconnecter</button>
-        } @else {
-          <p class="text-body text-text-secondary">Session non établie.</p>
-        }
-      </div>
-    </main>
-  `,
+  imports: [Avatar, Button, FormsModule, RouterLink],
+  templateUrl: './messages.html',
 })
 export class Messages {
+  private readonly messaging = inject(MessagingService);
+  private readonly realtime = inject(RealtimeService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
+  /** Lié au paramètre de route par `withComponentInputBinding()`. */
+  readonly conversationId = input<string | undefined>();
+
+  protected readonly maxLength = MESSAGE_MAX_LENGTH;
+  protected readonly connected = this.realtime.connected;
   protected readonly user = this.auth.user;
 
-  protected initials(firstName: string, lastName: string): string {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`;
+  protected readonly conversations = signal<Conversation[]>([]);
+  protected readonly messages = signal<Message[]>([]);
+  protected readonly draft = signal('');
+  protected readonly sending = signal(false);
+  protected readonly loadingThread = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
+
+  /** Vrai dès la première réponse : évite d'annoncer « aucune conversation » pendant l'attente. */
+  protected readonly conversationsLoaded = signal(false);
+
+  protected readonly openConversation = computed(() =>
+    this.conversations().find((c) => c.conversationId === this.conversationId()),
+  );
+
+  /** Personnes en train d'écrire dans la conversation ouverte, par nom d'affichage. */
+  protected readonly typists = signal<string[]>([]);
+
+  protected readonly typingLabel = computed(() => {
+    const names = this.typists();
+    if (names.length === 0) {
+      return null;
+    }
+    if (names.length === 1) {
+      return `${names[0]} écrit…`;
+    }
+    if (names.length === 2) {
+      return `${names[0]} et ${names[1]} écrivent…`;
+    }
+    return 'Plusieurs personnes écrivent…';
+  });
+
+  private readonly thread = viewChild<ElementRef<HTMLElement>>('thread');
+
+  /** Minuteur d'extinction par personne : chaque nouveau signal repousse l'échéance. */
+  private readonly typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  constructor() {
+    this.realtime.connect();
+    inject(DestroyRef).onDestroy(() => {
+      this.realtime.disconnect();
+      this.clearTypists();
+    });
+
+    this.loadConversations();
+
+    // Changer de conversation recharge le fil ; sans identifiant, le panneau se vide.
+    effect(() => {
+      const id = this.conversationId();
+      // Les personnes qui écrivaient ailleurs n'ont rien à faire dans le nouveau fil.
+      this.clearTypists();
+      if (id) {
+        this.loadThread(id);
+      } else {
+        this.messages.set([]);
+      }
+    });
+
+    this.realtime.messages$
+      .pipe(takeUntilDestroyed())
+      .subscribe((notification) => this.onMessagePushed(notification));
+
+    this.realtime.typing$
+      .pipe(takeUntilDestroyed())
+      .subscribe((notification) => this.onTypingPushed(notification));
+  }
+
+  // --- Chargement ---
+
+  private loadConversations(): void {
+    this.messaging.listConversations().subscribe({
+      next: (conversations) => {
+        this.conversations.set(conversations);
+        this.conversationsLoaded.set(true);
+      },
+      error: (error: HttpErrorResponse) => this.fail(error),
+    });
+  }
+
+  private loadThread(conversationId: string): void {
+    this.loadingThread.set(true);
+    this.errorMessage.set(null);
+    this.messaging.listMessages(conversationId).subscribe({
+      next: (messages) => {
+        // Le serveur renvoie du plus récent au plus ancien ; un fil se lit dans l'autre sens.
+        this.messages.set([...messages].reverse());
+        this.loadingThread.set(false);
+        this.scrollToLatest();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.loadingThread.set(false);
+        this.fail(error);
+      },
+    });
+  }
+
+  // --- Temps réel ---
+
+  /**
+   * Un message poussé sert deux panneaux : il alimente le fil s'il concerne la conversation
+   * ouverte, et rafraîchit l'aperçu dans la liste dans tous les cas.
+   */
+  private onMessagePushed(notification: MessageNotification): void {
+    if (notification.conversationId === this.conversationId()) {
+      this.messages.update((current) =>
+        current.some((m) => m.messageId === notification.messageId)
+          ? current
+          : [
+              ...current,
+              {
+                messageId: notification.messageId,
+                authorId: notification.authorId,
+                authorName: notification.authorName,
+                content: notification.content,
+                replyToMessageId: notification.replyToId,
+                sentAt: notification.sentAt,
+              },
+            ],
+      );
+      this.scrollToLatest();
+    }
+
+    this.conversations.update((current) => {
+      const updated = current.map((conversation) =>
+        conversation.conversationId === notification.conversationId
+          ? {
+              ...conversation,
+              lastActivityAt: notification.sentAt,
+              lastMessage: {
+                messageId: notification.messageId,
+                authorId: notification.authorId,
+                authorName: notification.authorName,
+                content: notification.content,
+                sentAt: notification.sentAt,
+              },
+            }
+          : conversation,
+      );
+      // Le tri par dernière activité est la règle du serveur : on la tient aussi côté client.
+      return updated.sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt));
+    });
+  }
+
+  /**
+   * Le serveur n'émet jamais « a cessé d'écrire » : chaque signal reçu (re)lance une extinction
+   * différée. Le serveur exclut déjà l'émetteur, aucun filtrage de soi n'est nécessaire.
+   */
+  private onTypingPushed(notification: TypingNotification): void {
+    if (notification.conversationId !== this.conversationId()) {
+      return;
+    }
+
+    const name = notification.userName;
+    this.typists.update((current) => (current.includes(name) ? current : [...current, name]));
+
+    clearTimeout(this.typingTimers.get(name));
+    this.typingTimers.set(
+      name,
+      setTimeout(() => {
+        this.typingTimers.delete(name);
+        this.typists.update((current) => current.filter((n) => n !== name));
+      }, TYPING_TTL_MS),
+    );
+  }
+
+  private clearTypists(): void {
+    this.typingTimers.forEach((timer) => clearTimeout(timer));
+    this.typingTimers.clear();
+    this.typists.set([]);
+  }
+
+  // --- Envoi ---
+
+  protected send(): void {
+    const content = this.draft().trim();
+    const conversationId = this.conversationId();
+    if (!content || !conversationId || this.sending()) {
+      return;
+    }
+
+    this.sending.set(true);
+    this.errorMessage.set(null);
+    this.messaging.post(conversationId, content).subscribe({
+      next: () => {
+        this.sending.set(false);
+        this.draft.set('');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.sending.set(false);
+        this.errorMessage.set(Messages.messageFor(error));
+      },
+    });
+  }
+
+  /** Entrée envoie, Maj+Entrée passe à la ligne — la convention des messageries. */
+  protected onDraftKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.send();
+      return;
+    }
+
+    const conversationId = this.conversationId();
+    if (conversationId) {
+      // La fréquence est bridée dans le service : on peut signaler à chaque touche.
+      this.realtime.notifyTyping(conversationId);
+    }
+  }
+
+  // --- Rendu ---
+
+  protected isMine(message: Message): boolean {
+    return message.authorId === this.auth.memberId();
+  }
+
+  protected initials(name: string): string {
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0]?.charAt(0) ?? '';
+    const last = parts.length > 1 ? (parts.at(-1)?.charAt(0) ?? '') : '';
+    return (first + last).toUpperCase() || '?';
+  }
+
+  /** Heure seule pour aujourd'hui, date courte au-delà : une liste n'a pas besoin de plus. */
+  protected shortTime(iso: string): string {
+    const date = new Date(iso);
+    const isToday = new Date().toDateString() === date.toDateString();
+    return isToday
+      ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      : date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
   }
 
   protected logout(): void {
+    this.realtime.disconnect();
     this.auth.logout().subscribe({
       next: () => void this.router.navigate(['/connexion']),
       error: () => void this.router.navigate(['/connexion']),
     });
+  }
+
+  private scrollToLatest(): void {
+    // Après le rendu de la nouvelle ligne, sinon on défile vers l'avant-dernière.
+    queueMicrotask(() => {
+      const element = this.thread()?.nativeElement;
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+      }
+    });
+  }
+
+  private fail(error: HttpErrorResponse): void {
+    this.errorMessage.set(Messages.messageFor(error));
+  }
+
+  private static messageFor(error: HttpErrorResponse): string {
+    switch (error.status) {
+      case 403:
+        return 'Vous ne participez pas à cette conversation.';
+      case 404:
+        return 'Cette conversation est introuvable.';
+      case 0:
+        return 'Serveur injoignable. Vérifiez votre connexion.';
+      default:
+        return 'Une erreur est survenue. Réessayez.';
+    }
   }
 }

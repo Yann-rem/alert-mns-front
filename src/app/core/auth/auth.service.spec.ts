@@ -9,6 +9,7 @@ const USER: CurrentUser = {
   email: 'yannick.remy@mns.fr',
   firstName: 'Yannick',
   lastName: 'Remy',
+  memberId: 'm-1',
   organisationId: 'org-1',
   role: 'ADMIN',
   memberStatus: 'ACTIVE',

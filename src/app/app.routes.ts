@@ -25,6 +25,14 @@ export const routes: Routes = [
     title: 'Messages — Alerte',
   },
   {
+    // Même composant : la conversation ouverte vit dans l'URL pour rester partageable,
+    // et pour que le retour arrière du navigateur referme le fil.
+    path: 'messages/:conversationId',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
+    title: 'Messages — Alerte',
+  },
+  {
     path: 'administration',
     // adminGuard seul : il couvre déjà l'authentification. Le composer avec
     // authGuard déclencherait deux appels à /me, les gardes étant parallèles.

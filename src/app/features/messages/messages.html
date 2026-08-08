@@ -1,0 +1,188 @@
+<main class="flex h-dvh flex-col bg-surface-page text-text-primary">
+  <header
+    class="flex shrink-0 items-center justify-between gap-3 border-b border-border-default bg-surface-default px-4 py-2"
+  >
+    <div class="flex items-center gap-2">
+      <svg viewBox="0 0 32 32" class="h-7 w-7" aria-hidden="true">
+        <rect width="32" height="32" rx="8" class="fill-accent-solid" />
+        <path d="M9 12.5h14M9 17h9" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <circle cx="24" cy="9" r="4" class="fill-danger-solid" />
+      </svg>
+      <span class="text-heading">Alerte</span>
+      @if (!connected()) {
+        <span class="text-caption text-text-muted" role="status">Reconnexion…</span>
+      }
+    </div>
+
+    <div class="flex items-center gap-3">
+      @if (user(); as u) {
+        <span class="hidden text-label text-text-secondary sm:inline">
+          {{ u.firstName }} {{ u.lastName }}
+        </span>
+        @if (u.role === 'ADMIN') {
+          <a routerLink="/administration" class="text-label text-accent-text hover:underline">
+            Administration
+          </a>
+        }
+      }
+      <button appButton variant="ghost" (click)="logout()">Se déconnecter</button>
+    </div>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p
+      role="alert"
+      class="shrink-0 border-b border-danger-border bg-danger-subtle px-4 py-2 text-label text-danger-text"
+    >
+      {{ message }}
+    </p>
+  }
+
+  <div class="flex min-h-0 flex-1">
+    <!-- Liste des conversations : masquée sur mobile dès qu'un fil est ouvert -->
+    <nav
+      aria-label="Conversations"
+      class="w-full shrink-0 overflow-y-auto border-border-default bg-surface-default md:block md:w-80 md:border-r"
+      [class.hidden]="conversationId()"
+    >
+      @if (!conversationsLoaded()) {
+        <p class="p-4 text-body text-text-secondary" role="status">Chargement…</p>
+      } @else if (conversations().length === 0) {
+        <p class="p-4 text-body text-text-secondary">
+          Aucune conversation pour l'instant. Le canal Général apparaîtra dès votre rattachement à
+          un groupe.
+        </p>
+      } @else {
+        <ul>
+          @for (conversation of conversations(); track conversation.conversationId) {
+            <li>
+              <a
+                [routerLink]="['/messages', conversation.conversationId]"
+                class="flex w-full items-center gap-3 border-b border-border-default px-4 py-3 text-left transition-colors hover:bg-surface-muted"
+                [class.bg-accent-subtle]="conversation.conversationId === conversationId()"
+                [attr.aria-current]="
+                  conversation.conversationId === conversationId() ? 'page' : null
+                "
+              >
+                <app-avatar
+                  [initials]="initials(conversation.title)"
+                  size="md"
+                  [ariaLabel]="conversation.title"
+                />
+                <span class="min-w-0 flex-1">
+                  <span class="flex items-baseline justify-between gap-2">
+                    <span class="truncate text-body font-medium">{{ conversation.title }}</span>
+                    @if (conversation.lastMessage; as last) {
+                      <span class="shrink-0 text-micro text-text-muted">
+                        {{ shortTime(last.sentAt) }}
+                      </span>
+                    }
+                  </span>
+                  <span class="block truncate text-caption text-text-muted">
+                    @if (conversation.lastMessage; as last) {
+                      {{ last.authorName }} — {{ last.content }}
+                    } @else {
+                      Aucun message
+                    }
+                  </span>
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </nav>
+
+    <!-- Fil de discussion -->
+    <section class="flex min-h-0 flex-1 flex-col" [class.hidden]="!conversationId()">
+      @if (openConversation(); as conversation) {
+        <div
+          class="flex shrink-0 items-center gap-2 border-b border-border-default bg-surface-default px-4 py-2"
+        >
+          <a
+            routerLink="/messages"
+            class="text-label text-accent-text hover:underline md:hidden"
+            aria-label="Retour aux conversations"
+          >
+            ← Retour
+          </a>
+          <h1 class="truncate text-heading">{{ conversation.title }}</h1>
+        </div>
+
+        <div #thread class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          @if (loadingThread()) {
+            <p class="text-body text-text-secondary" role="status">Chargement…</p>
+          } @else if (messages().length === 0) {
+            <p class="text-body text-text-secondary">
+              Aucun message. Écrivez le premier, il partira en temps réel.
+            </p>
+          } @else {
+            <ul class="flex flex-col gap-2">
+              @for (message of messages(); track message.messageId) {
+                <li class="flex" [class.justify-end]="isMine(message)">
+                  <div class="max-w-[80%] min-w-0">
+                    @if (!isMine(message)) {
+                      <p class="mb-0.5 text-micro text-text-muted">{{ message.authorName }}</p>
+                    }
+                    <div
+                      class="rounded-lg px-3 py-2 text-body break-words"
+                      [class.bg-accent-solid]="isMine(message)"
+                      [class.text-text-on-accent]="isMine(message)"
+                      [class.bg-surface-default]="!isMine(message)"
+                      [class.border]="!isMine(message)"
+                      [class.border-border-default]="!isMine(message)"
+                    >
+                      {{ message.content }}
+                    </div>
+                    <p
+                      class="mt-0.5 text-micro text-text-muted"
+                      [class.text-right]="isMine(message)"
+                    >
+                      {{ shortTime(message.sentAt) }}
+                    </p>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <!-- Hauteur réservée en permanence : l'indicateur ne doit pas décaler le fil -->
+        <p
+          class="h-5 shrink-0 truncate px-4 text-caption text-text-muted"
+          role="status"
+          aria-live="polite"
+        >
+          {{ typingLabel() }}
+        </p>
+
+        <form
+          (ngSubmit)="send()"
+          class="flex shrink-0 items-end gap-2 border-t border-border-default bg-surface-default p-3"
+        >
+          <label for="draft" class="sr-only">Votre message</label>
+          <textarea
+            id="draft"
+            rows="1"
+            [maxlength]="maxLength"
+            [ngModel]="draft()"
+            (ngModelChange)="draft.set($event)"
+            (keydown)="onDraftKeydown($event)"
+            name="draft"
+            placeholder="Écrivez votre message…"
+            class="max-h-32 min-h-10 flex-1 resize-y rounded-md border border-border-default bg-surface-sunken px-3 py-2 text-body text-text-primary outline-2 outline-offset-0 outline-transparent transition-colors placeholder:text-text-muted focus-visible:border-accent-solid focus-visible:outline-accent-solid"
+          ></textarea>
+          <button appButton type="submit" [disabled]="sending() || draft().trim().length === 0">
+            {{ sending() ? 'Envoi…' : 'Envoyer' }}
+          </button>
+        </form>
+      } @else if (conversationId()) {
+        <p class="p-4 text-body text-text-secondary" role="status">Ouverture de la conversation…</p>
+      } @else {
+        <p class="hidden p-4 text-body text-text-secondary md:block">
+          Choisissez une conversation pour l'afficher.
+        </p>
+      }
+    </section>
+  </div>
+</main>

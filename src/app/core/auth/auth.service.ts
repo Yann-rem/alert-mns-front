@@ -11,6 +11,12 @@ export interface CurrentUser {
   email: string;
   firstName: string;
   lastName: string;
+  /**
+   * Identifiant de membre, null hors organisation. Le bounded context Messaging désigne auteurs et
+   * participants par cet identifiant : c'est lui, et non `userId`, qui permet de reconnaître ses
+   * propres messages.
+   */
+  memberId: string | null;
   /** Null si l'utilisateur n'est membre d'aucune organisation. */
   organisationId: string | null;
   role: MemberRole | null;
@@ -45,6 +51,8 @@ export class AuthService {
 
   /** Organisation courante — indispensable pour construire les URLs `/api/organisations/{orgId}/…`. */
   readonly organisationId = computed(() => this.currentUser()?.organisationId ?? null);
+  /** Identité côté Messaging : sert à distinguer ses propres messages de ceux des autres. */
+  readonly memberId = computed(() => this.currentUser()?.memberId ?? null);
   readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
 
   /**
