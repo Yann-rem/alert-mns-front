@@ -1,0 +1,107 @@
+<main class="min-h-dvh bg-surface-page text-text-primary">
+  <div class="mx-auto max-w-2xl p-4 md:p-6">
+    <header class="flex flex-wrap items-baseline justify-between gap-3">
+      <div>
+        <h1 class="text-title">Diffuser une alerte</h1>
+        <p class="text-caption text-text-muted">
+          Le message part immédiatement et ne peut pas être rappelé.
+        </p>
+      </div>
+      <a routerLink="/messages" class="text-label text-accent-text hover:underline">
+        ← Retour aux messages
+      </a>
+    </header>
+
+    <form
+      (submit)="submit($event)"
+      class="mt-6 flex flex-col gap-6 rounded-lg border border-border-default bg-surface-default p-4 md:p-6"
+    >
+      @if (errorMessage(); as message) {
+        <p
+          role="alert"
+          class="rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+        >
+          {{ message }}
+        </p>
+      }
+
+      @if (successMessage(); as message) {
+        <p
+          role="status"
+          class="rounded-md border border-success-text bg-success-subtle px-3 py-2 text-label text-success-text"
+        >
+          {{ message }}
+        </p>
+      }
+
+      <fieldset class="flex flex-col gap-1.5">
+        <legend class="mb-1.5 text-label text-text-secondary">Niveau</legend>
+        <div class="flex gap-2">
+          @for (option of levelOptions; track option.value) {
+            <label [class]="levelClasses(option.value)">
+              <input
+                type="radio"
+                name="level"
+                class="sr-only"
+                [value]="option.value"
+                [checked]="level() === option.value"
+                (change)="level.set(option.value)"
+              />
+              {{ option.label }}
+            </label>
+          }
+        </div>
+        <span class="text-caption text-text-muted">{{ levelHint() }}</span>
+      </fieldset>
+
+      <div class="flex flex-col gap-1.5">
+        <label for="alert-audience" class="text-label text-text-secondary">Destinataires</label>
+        <select
+          appField
+          id="alert-audience"
+          [value]="audience()"
+          (change)="audience.set($any($event.target).value)"
+        >
+          <option value="">Toute l'organisation</option>
+          @if (groups().length > 0) {
+            <optgroup label="Groupes">
+              @for (group of groups(); track group.groupId) {
+                <option [value]="group.groupId">{{ group.name }}</option>
+              }
+            </optgroup>
+          }
+        </select>
+        @if (groupsFailed()) {
+          <span class="text-caption text-warning-text">
+            Les groupes n'ont pas pu être chargés. La diffusion à toute l'organisation reste
+            possible.
+          </span>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label for="alert-content" class="text-label text-text-secondary">Message</label>
+        <textarea
+          id="alert-content"
+          rows="5"
+          [attr.maxlength]="maxLength"
+          [value]="content()"
+          (input)="onContentInput($any($event.target).value)"
+          placeholder="Fermeture exceptionnelle de l'école demain…"
+          class="min-h-28 w-full resize-y rounded-md border border-border-default bg-surface-sunken px-3 py-2 text-body text-text-primary outline-2 outline-offset-0 outline-transparent transition-colors placeholder:text-text-muted focus-visible:border-accent-solid focus-visible:outline-accent-solid"
+        ></textarea>
+        @if (showRemaining()) {
+          <span class="text-caption text-text-muted" aria-live="polite">
+            {{ remaining() }} caractère(s) restant(s)
+          </span>
+        }
+      </div>
+
+      <div class="flex justify-end">
+        <button appButton type="submit" [disabled]="!canSubmit()">
+          {{ sending() ? 'Diffusion…' : 'Diffuser à ' + audienceLabel() }}
+        </button>
+      </div>
+    </form>
+  </div>
+</main>

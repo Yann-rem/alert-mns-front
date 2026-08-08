@@ -54,6 +54,11 @@ export class AuthService {
   /** Identité côté Messaging : sert à distinguer ses propres messages de ceux des autres. */
   readonly memberId = computed(() => this.currentUser()?.memberId ?? null);
   readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
+  /** Diffuser une alerte est ouvert aux ADMIN comme aux MANAGER (garde d'`AlertController`). */
+  readonly canBroadcast = computed(() => {
+    const role = this.currentUser()?.role;
+    return role === 'ADMIN' || role === 'MANAGER';
+  });
 
   /**
    * Ouvre une session. Le backend répond 200 sans corps et pose le cookie de

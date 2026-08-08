@@ -69,6 +69,33 @@ export interface MemberFilters {
 }
 
 /**
+ * Nature du groupe. `GENERAL` désigne le canal par défaut de l'organisation,
+ * auquel tout nouveau membre est rattaché automatiquement.
+ */
+export type GroupKind = 'GENERAL' | 'STANDARD';
+
+export interface GroupSummary {
+  groupId: string;
+  name: string;
+  kind: GroupKind;
+  createdAt: string;
+}
+
+export interface GroupsPage {
+  items: GroupSummary[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+/** Filtres de la liste des groupes. */
+export interface GroupFilters {
+  q?: string;
+  page?: number;
+  size?: number;
+}
+
+/**
  * Administration de l'organisation.
  *
  * <p>Toutes les routes sont préfixées par l'organisation courante, lue depuis
@@ -96,6 +123,27 @@ export class AdminService {
     if (filters.size !== undefined) params['size'] = String(filters.size);
 
     return this.http.get<MembersPage>(`${base}/members`, { params });
+  }
+
+  /**
+   * Groupes de l'organisation.
+   *
+   * <p>Seule lecture de ce service ouverte aux MANAGER en plus des ADMIN : le
+   * sélecteur d'audience de la diffusion d'alerte s'en sert, et diffuser est
+   * justement permis aux deux rôles.</p>
+   */
+  listGroups(filters: GroupFilters = {}): Observable<GroupsPage> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+
+    const params: Record<string, string> = {};
+    if (filters.q?.trim()) params['q'] = filters.q.trim();
+    if (filters.page !== undefined) params['page'] = String(filters.page);
+    if (filters.size !== undefined) params['size'] = String(filters.size);
+
+    return this.http.get<GroupsPage>(`${base}/groups`, { params });
   }
 
   /** Invitations encore en attente d'acceptation. */

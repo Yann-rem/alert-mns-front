@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { adminGuard } from './core/auth/admin.guard';
 import { authGuard } from './core/auth/auth.guard';
+import { broadcastGuard } from './core/auth/broadcast.guard';
 import { guestGuard } from './core/auth/guest.guard';
 
 export const routes: Routes = [
@@ -31,6 +32,14 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
     title: 'Messages — Alerte',
+  },
+  {
+    path: 'diffuser',
+    // broadcastGuard seul, pour les mêmes raisons qu'adminGuard ci-dessous.
+    canActivate: [broadcastGuard],
+    loadComponent: () =>
+      import('./features/alerting/broadcast/broadcast-alert').then((m) => m.BroadcastAlert),
+    title: 'Diffuser une alerte — Alerte',
   },
   {
     path: 'administration',

@@ -67,6 +67,7 @@ export class Messages {
   protected readonly maxLength = MESSAGE_MAX_LENGTH;
   protected readonly connected = this.realtime.connected;
   protected readonly user = this.auth.user;
+  protected readonly canBroadcast = this.auth.canBroadcast;
 
   protected readonly conversations = signal<Conversation[]>([]);
   protected readonly messages = signal<Message[]>([]);

@@ -19,6 +19,11 @@
         <span class="hidden text-label text-text-secondary sm:inline">
           {{ u.firstName }} {{ u.lastName }}
         </span>
+        @if (canBroadcast()) {
+          <a routerLink="/diffuser" class="text-label text-accent-text hover:underline">
+            Diffuser
+          </a>
+        }
         @if (u.role === 'ADMIN') {
           <a routerLink="/administration" class="text-label text-accent-text hover:underline">
             Administration
