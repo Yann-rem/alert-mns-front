@@ -31,6 +31,25 @@ export interface BroadcastAlertResult {
 }
 
 /**
+ * Alerte destinée à l'utilisateur courant.
+ *
+ * <p>`issuerName` et `groupName` sont résolus par le backend à la lecture : le destinataire ne peut
+ * traduire ni un `memberId` ni un `groupId`, les annuaires correspondants étant réservés aux rôles
+ * d'administration.</p>
+ */
+export interface Alert {
+  alertId: string;
+  issuerId: string;
+  issuerName: string;
+  audienceKind: AlertAudienceKind;
+  groupId: string | null;
+  groupName: string | null;
+  level: AlertLevel;
+  content: string;
+  issuedAt: string;
+}
+
+/**
  * Diffusion des alertes.
  *
  * <p>Contrairement aux routes d'administration, celle-ci n'est pas préfixée par
@@ -44,5 +63,13 @@ export class AlertingService {
   /** Diffuse une alerte. Le message part immédiatement : aucun rappel n'est prévu. */
   broadcast(payload: BroadcastAlertPayload): Observable<BroadcastAlertResult> {
     return this.http.post<BroadcastAlertResult>('/api/alerting/alerts', payload);
+  }
+
+  /**
+   * Alertes destinées à l'utilisateur courant (son organisation et ses groupes), de la plus récente
+   * à la plus ancienne. Ouvert à tout membre authentifié, contrairement à la diffusion.
+   */
+  listMine(): Observable<Alert[]> {
+    return this.http.get<Alert[]>('/api/alerting/alerts');
   }
 }

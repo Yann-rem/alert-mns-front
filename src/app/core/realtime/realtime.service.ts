@@ -2,6 +2,8 @@ import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { Client, type IMessage } from '@stomp/stompjs';
 import { Observable, Subject } from 'rxjs';
 
+import { type AlertAudienceKind, type AlertLevel } from '../alerting/alerting.service';
+
 /**
  * Message poussé aux participants d'une conversation.
  *
@@ -31,6 +33,26 @@ export interface TypingNotification {
 }
 
 /**
+ * Alerte poussée à ses destinataires.
+ *
+ * <p>Même forme que celle rendue par `GET /api/alerting/alerts` : le serveur résout à l'émission le
+ * nom de l'émetteur et celui du groupe ciblé, que le destinataire ne peut pas traduire lui-même —
+ * les annuaires correspondants sont réservés aux rôles d'administration.</p>
+ */
+export interface AlertNotification {
+  alertId: string;
+  organisationId: string;
+  issuerId: string;
+  issuerName: string;
+  content: string;
+  level: AlertLevel;
+  audienceKind: AlertAudienceKind;
+  groupId: string | null;
+  groupName: string | null;
+  issuedAt: string;
+}
+
+/**
  * Intervalle minimal entre deux signaux de frappe.
  *
  * <p>Une frappe émet un événement par caractère ; sans ce garde-fou, chaque touche déclencherait un
@@ -39,7 +61,11 @@ export interface TypingNotification {
 const TYPING_THROTTLE_MS = 2_000;
 
 /**
- * Canal temps réel STOMP over WebSocket.
+ * Canal temps réel STOMP over WebSocket, partagé par la messagerie et les alertes.
+ *
+ * <p>Il ne vit volontairement dans aucun des deux dossiers métier : une seule connexion sert les
+ * trois destinations, et rattacher le transport à l'un des bounded contexts obligerait l'autre à en
+ * dépendre.</p>
  *
  * <p><b>Authentification</b> : le handshake sur `/ws` est une requête HTTP qui traverse la chaîne de
  * filtres Spring Security et réutilise le cookie de session. Aucun jeton à transmettre — c'est
@@ -61,12 +87,14 @@ export class RealtimeService {
 
   private readonly incomingMessages = new Subject<MessageNotification>();
   private readonly incomingTyping = new Subject<TypingNotification>();
+  private readonly incomingAlerts = new Subject<AlertNotification>();
 
   /** Vrai tant que la session STOMP est active ; l'interface peut s'en servir pour prévenir. */
   readonly connected = signal(false);
 
   readonly messages$: Observable<MessageNotification> = this.incomingMessages.asObservable();
   readonly typing$: Observable<TypingNotification> = this.incomingTyping.asObservable();
+  readonly alerts$: Observable<AlertNotification> = this.incomingAlerts.asObservable();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.disconnect());
@@ -92,6 +120,9 @@ export class RealtimeService {
         );
         client.subscribe('/user/queue/typing', (frame: IMessage) =>
           this.emit(this.incomingTyping, frame),
+        );
+        client.subscribe('/user/queue/alerts', (frame: IMessage) =>
+          this.emit(this.incomingAlerts, frame),
         );
       },
       onWebSocketClose: () => this.connected.set(false),

@@ -1,0 +1,33 @@
+@if (current(); as alert) {
+  <!-- Une alerte URGENT doit interrompre la lecture d'écran ; les autres se contentent de s'annoncer. -->
+  <div
+    [attr.role]="alert.level === 'URGENT' ? 'alert' : 'status'"
+    aria-live="polite"
+    [class]="'flex shrink-0 items-start gap-3 border-b px-4 py-3 ' + levelSkin(alert.level)"
+  >
+    <div class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <app-badge [tone]="levelTone(alert.level)">{{ levelLabel(alert.level) }}</app-badge>
+        <span class="text-caption text-text-secondary">
+          {{ alert.issuerName }}
+          @if (alert.groupName) {
+            · {{ alert.groupName }}
+          }
+          · {{ issuedLabel(alert.issuedAt) }}
+        </span>
+      </div>
+      <p class="mt-1 text-body break-words text-text-primary">{{ alert.content }}</p>
+    </div>
+
+    <div class="shrink-0">
+      <button
+        appButton
+        variant="ghost"
+        aria-label="Masquer l'alerte"
+        (click)="dismiss(alert.alertId)"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+}

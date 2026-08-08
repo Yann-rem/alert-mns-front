@@ -9,9 +9,10 @@ import { vi } from 'vitest';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   RealtimeService,
+  type AlertNotification,
   type MessageNotification,
   type TypingNotification,
-} from '../../core/messaging/realtime.service';
+} from '../../core/realtime/realtime.service';
 import { Messages } from './messages';
 
 const CONVERSATIONS_URL = '/api/messaging/conversations';
@@ -22,8 +23,10 @@ class RealtimeStub {
   readonly connected = signal(true);
   readonly pushed = new Subject<MessageNotification>();
   readonly typed = new Subject<TypingNotification>();
+  readonly alerted = new Subject<AlertNotification>();
   readonly messages$ = this.pushed.asObservable();
   readonly typing$ = this.typed.asObservable();
+  readonly alerts$ = this.alerted.asObservable();
   readonly typingCalls: string[] = [];
   connect(): void {}
   disconnect(): void {}
@@ -97,6 +100,9 @@ describe('Messages', () => {
     if (conversationId) {
       fixture.componentRef.setInput('conversationId', conversationId);
     }
+    await fixture.whenStable();
+    // Le bandeau d'alerte vit dans cet écran : sa lecture part au montage.
+    http.expectOne('/api/alerting/alerts').flush([]);
     await fixture.whenStable();
     return fixture;
   }

@@ -26,9 +26,10 @@ import {
   RealtimeService,
   type MessageNotification,
   type TypingNotification,
-} from '../../core/messaging/realtime.service';
+} from '../../core/realtime/realtime.service';
 import { Avatar } from '../../ui/avatar/avatar';
 import { Button } from '../../ui/button/button';
+import { AlertBanner } from '../alerting/banner/alert-banner';
 
 /**
  * Durée de vie d'un indicateur de frappe.
@@ -52,7 +53,7 @@ const TYPING_TTL_MS = 4_000;
 @Component({
   selector: 'app-messages',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Button, FormsModule, RouterLink],
+  imports: [AlertBanner, Avatar, Button, FormsModule, RouterLink],
   templateUrl: './messages.html',
 })
 export class Messages {
