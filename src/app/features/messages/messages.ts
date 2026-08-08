@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -29,7 +29,6 @@ import {
 } from '../../core/realtime/realtime.service';
 import { Avatar } from '../../ui/avatar/avatar';
 import { Button } from '../../ui/button/button';
-import { AlertBanner } from '../alerting/banner/alert-banner';
 
 /**
  * Durée de vie d'un indicateur de frappe.
@@ -53,22 +52,20 @@ const TYPING_TTL_MS = 4_000;
 @Component({
   selector: 'app-messages',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AlertBanner, Avatar, Button, FormsModule, RouterLink],
+  imports: [Avatar, Button, FormsModule, RouterLink],
   templateUrl: './messages.html',
+  // Occupe la zone de contenu de la coquille, qui est une colonne flex de hauteur fixe.
+  host: { class: 'flex min-h-0 flex-1 flex-col' },
 })
 export class Messages {
   private readonly messaging = inject(MessagingService);
   private readonly realtime = inject(RealtimeService);
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
 
   /** Lié au paramètre de route par `withComponentInputBinding()`. */
   readonly conversationId = input<string | undefined>();
 
   protected readonly maxLength = MESSAGE_MAX_LENGTH;
-  protected readonly connected = this.realtime.connected;
-  protected readonly user = this.auth.user;
-  protected readonly canBroadcast = this.auth.canBroadcast;
 
   protected readonly conversations = signal<Conversation[]>([]);
   protected readonly messages = signal<Message[]>([]);
@@ -107,11 +104,9 @@ export class Messages {
   private readonly typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor() {
-    this.realtime.connect();
-    inject(DestroyRef).onDestroy(() => {
-      this.realtime.disconnect();
-      this.clearTypists();
-    });
+    // La connexion appartient à la coquille : cet écran est détruit à chaque changement de
+    // conversation, la fermer ici ferait cycler le socket.
+    inject(DestroyRef).onDestroy(() => this.clearTypists());
 
     this.loadConversations();
 
@@ -298,14 +293,6 @@ export class Messages {
     return isToday
       ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
       : date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-  }
-
-  protected logout(): void {
-    this.realtime.disconnect();
-    this.auth.logout().subscribe({
-      next: () => void this.router.navigate(['/connexion']),
-      error: () => void this.router.navigate(['/connexion']),
-    });
   }
 
   private scrollToLatest(): void {

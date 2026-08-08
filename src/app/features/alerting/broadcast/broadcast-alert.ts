@@ -1,6 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import { AdminService, type GroupSummary } from '../../../core/admin/admin.service';
 import {
@@ -46,8 +45,9 @@ const LEVEL_HINTS: Readonly<Record<AlertLevel, string>> = {
 @Component({
   selector: 'app-broadcast-alert',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Field, RouterLink],
+  imports: [Button, Field],
   templateUrl: './broadcast-alert.html',
+  host: { class: 'block' },
 })
 export class BroadcastAlert {
   private readonly alerting = inject(AlertingService);

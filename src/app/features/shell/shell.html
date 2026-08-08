@@ -1,0 +1,102 @@
+<header
+  class="flex shrink-0 items-center justify-between gap-3 border-b border-border-default bg-surface-default px-4 py-2"
+>
+  <div class="flex items-center gap-2">
+    <svg viewBox="0 0 32 32" class="h-7 w-7" aria-hidden="true">
+      <rect width="32" height="32" rx="8" class="fill-accent-solid" />
+      <path d="M9 12.5h14M9 17h9" stroke="white" stroke-width="2" stroke-linecap="round" />
+      <circle cx="24" cy="9" r="4" class="fill-danger-solid" />
+    </svg>
+    <span class="text-heading">Alerte</span>
+    @if (!connected()) {
+      <span class="text-caption text-text-muted" role="status">Reconnexion…</span>
+    }
+  </div>
+
+  <div class="flex items-center gap-3">
+    @if (user(); as u) {
+      <span class="hidden text-label text-text-secondary sm:inline">
+        {{ u.firstName }} {{ u.lastName }}
+      </span>
+    }
+    <button appButton variant="ghost" (click)="logout()">Se déconnecter</button>
+  </div>
+</header>
+
+<app-alert-banner />
+
+<div class="flex min-h-0 flex-1">
+  <!-- Rail : icônes seules, l'intitulé passe par aria-label et l'infobulle -->
+  <nav
+    aria-label="Navigation principale"
+    class="hidden shrink-0 flex-col items-center gap-1 border-r border-border-default bg-surface-default p-2 md:flex"
+  >
+    @for (item of destinations(); track item.path) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="bg-accent-subtle text-accent-text"
+        [attr.aria-label]="item.label"
+        [title]="item.label"
+        class="flex h-10 w-10 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-muted"
+      >
+        <ng-container
+          [ngTemplateOutlet]="icon"
+          [ngTemplateOutletContext]="{ $implicit: item.icon }"
+        />
+      </a>
+    }
+  </nav>
+
+  <main class="flex min-h-0 flex-1 flex-col overflow-y-auto">
+    <router-outlet />
+  </main>
+</div>
+
+<!-- Barre d'onglets : sous 768 px, la navigation revient au pouce -->
+<nav
+  aria-label="Navigation principale"
+  class="flex shrink-0 border-t border-border-default bg-surface-default md:hidden"
+>
+  @for (item of destinations(); track item.path) {
+    <a
+      [routerLink]="item.path"
+      routerLinkActive="text-accent-text"
+      class="flex flex-1 flex-col items-center gap-0.5 py-2 text-micro text-text-secondary transition-colors"
+    >
+      <ng-container
+        [ngTemplateOutlet]="icon"
+        [ngTemplateOutletContext]="{ $implicit: item.icon }"
+      />
+      {{ item.label }}
+    </a>
+  }
+</nav>
+
+<ng-template #icon let-name>
+  <svg
+    viewBox="0 0 24 24"
+    class="h-5 w-5"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    @switch (name) {
+      @case ('messages') {
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      }
+      @case ('broadcast') {
+        <path d="m3 11 18-5v12L3 14v-3z" />
+        <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+      }
+      @case ('admin') {
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      }
+    }
+  </svg>
+</ng-template>

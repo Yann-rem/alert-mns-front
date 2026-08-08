@@ -38,6 +38,7 @@ const LOADER_DELAY_MS = 200;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Avatar, Badge, Button, Field, InviteMemberDialog],
   templateUrl: './admin-members.html',
+  host: { class: 'block' },
 })
 export class AdminMembers implements OnInit {
   private readonly admin = inject(AdminService);

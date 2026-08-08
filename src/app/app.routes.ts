@@ -20,41 +20,46 @@ export const routes: Routes = [
     title: 'Activation — Alerte',
   },
   {
-    path: 'messages',
-    canActivate: [authGuard],
-    loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
-    title: 'Messages — Alerte',
-  },
-  {
-    // Même composant : la conversation ouverte vit dans l'URL pour rester partageable,
-    // et pour que le retour arrière du navigateur referme le fil.
-    path: 'messages/:conversationId',
-    canActivate: [authGuard],
-    loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
-    title: 'Messages — Alerte',
-  },
-  {
-    path: 'diffuser',
-    // broadcastGuard seul, pour les mêmes raisons qu'adminGuard ci-dessous.
-    canActivate: [broadcastGuard],
-    loadComponent: () =>
-      import('./features/alerting/broadcast/broadcast-alert').then((m) => m.BroadcastAlert),
-    title: 'Diffuser une alerte — Alerte',
-  },
-  {
-    path: 'administration',
-    // adminGuard seul : il couvre déjà l'authentification. Le composer avec
-    // authGuard déclencherait deux appels à /me, les gardes étant parallèles.
-    canActivate: [adminGuard],
-    loadComponent: () =>
-      import('./features/admin/members/admin-members').then((m) => m.AdminMembers),
-    title: 'Administration — Alerte',
-  },
-  {
     path: 'design-system',
     loadComponent: () => import('./features/design-system/showcase').then((m) => m.Showcase),
     title: 'Design system — Alerte',
   },
+  // Placé avant la coquille : celle-ci matche n'importe quel préfixe, y compris la racine.
   { path: '', pathMatch: 'full', redirectTo: 'connexion' },
+  {
+    // Écrans authentifiés. L'authentification est portée ici une bonne fois ; les gardes de rôle
+    // restent sur leur route et demeurent autonomes (les gardes d'un même tableau sont parallèles).
+    path: '',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/shell/shell').then((m) => m.Shell),
+    children: [
+      {
+        path: 'messages',
+        loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
+        title: 'Messages — Alerte',
+      },
+      {
+        // Même composant : la conversation ouverte vit dans l'URL pour rester partageable,
+        // et pour que le retour arrière du navigateur referme le fil.
+        path: 'messages/:conversationId',
+        loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
+        title: 'Messages — Alerte',
+      },
+      {
+        path: 'diffuser',
+        canActivate: [broadcastGuard],
+        loadComponent: () =>
+          import('./features/alerting/broadcast/broadcast-alert').then((m) => m.BroadcastAlert),
+        title: 'Diffuser une alerte — Alerte',
+      },
+      {
+        path: 'administration',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/members/admin-members').then((m) => m.AdminMembers),
+        title: 'Administration — Alerte',
+      },
+    ],
+  },
   { path: '**', redirectTo: 'connexion' },
 ];

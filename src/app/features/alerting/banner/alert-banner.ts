@@ -89,10 +89,8 @@ export class AlertBanner {
   });
 
   constructor() {
-    // Sans effet si la connexion est déjà ouverte. La fermer, en revanche, regarde l'écran hôte :
-    // ce bandeau n'est pas propriétaire du canal.
-    this.realtime.connect();
-
+    // Ni ouverture ni fermeture du canal : la coquille en est propriétaire. Ce bandeau se contente
+    // d'écouter, et reste ainsi indifférent à la navigation.
     this.alerting.listMine().subscribe({
       next: (alerts) => this.alerts.set(AlertBanner.recentFirst(alerts)),
       // Une alerte non chargée ne doit pas défigurer l'écran : le bandeau reste simplement absent.
