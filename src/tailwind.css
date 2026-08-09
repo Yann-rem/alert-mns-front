@@ -91,9 +91,13 @@
   --color-surface-muted: var(--gray-50);
   --color-surface-page: var(--gray-150);
 
+  /* Trois niveaux de gris, tous conformes au niveau AA (4,5:1) sur la surface claire
+     la plus sombre (--color-surface-page). Le gris 500 était 2,39:1 sur ce fond : la
+     hiérarchie est décalée d'un cran plutôt que rehaussée d'un seul niveau, afin de
+     conserver trois paliers réellement distincts. */
   --color-text-primary: var(--gray-900);
-  --color-text-secondary: var(--gray-700);
-  --color-text-muted: var(--gray-500);
+  --color-text-secondary: var(--gray-800);
+  --color-text-muted: var(--gray-700);
   --color-text-on-accent: var(--gray-0);
 
   --color-border-default: var(--gray-200);
@@ -130,8 +134,11 @@
   --color-surface-muted: var(--gray-925);
   --color-surface-page: var(--gray-980);
 
+  /* Le mode sombre garde ses propres valeurs : le gris 500 y atteint 5,84:1 sur
+     --color-surface-default, il n'a donc pas besoin du décalage appliqué au mode clair. */
   --color-text-primary: var(--gray-50);
   --color-text-secondary: var(--gray-300);
+  --color-text-muted: var(--gray-500);
 
   --color-border-default: var(--gray-850);
   --color-border-strong: var(--gray-800);
