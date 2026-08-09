@@ -25,6 +25,11 @@
   </header>
 
   <app-invite-member-dialog [(open)]="inviteOpen" (invited)="onInvited()" />
+  <app-manage-member-dialog
+    [(open)]="manageOpen"
+    [member]="managed()"
+    (changed)="onMemberChanged($event)"
+  />
 
   <!-- Onglets -->
   <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrer les membres">
@@ -118,7 +123,7 @@
                   <p class="truncate text-caption text-text-muted">{{ member.email }}</p>
                 </div>
               </div>
-              <div class="mt-2 flex flex-wrap gap-1.5">
+              <div class="mt-2 flex flex-wrap items-center gap-1.5">
                 <app-badge tone="neutral" variant="outline">{{ roleLabel(member.role) }}</app-badge>
                 @if (member.anonymized) {
                   <app-badge tone="neutral">Anonymisé</app-badge>
@@ -127,6 +132,15 @@
                 } @else {
                   <app-badge tone="success">Actif</app-badge>
                 }
+                <button
+                  appButton
+                  variant="ghost"
+                  class="ml-auto"
+                  (click)="manage(member)"
+                  [attr.aria-label]="'Gérer ' + fullName(member)"
+                >
+                  Gérer
+                </button>
               </div>
             </li>
           }
@@ -147,6 +161,7 @@
                 <th scope="col" class="px-4 py-2 font-medium">Membre</th>
                 <th scope="col" class="px-4 py-2 font-medium">Rôle</th>
                 <th scope="col" class="px-4 py-2 font-medium">Statut</th>
+                <th scope="col" class="px-4 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -178,6 +193,16 @@
                     } @else {
                       <app-badge tone="success">Actif</app-badge>
                     }
+                  </td>
+                  <td class="px-4 py-2 text-right">
+                    <button
+                      appButton
+                      variant="ghost"
+                      (click)="manage(member)"
+                      [attr.aria-label]="'Gérer ' + fullName(member)"
+                    >
+                      Gérer
+                    </button>
                   </td>
                 </tr>
               }

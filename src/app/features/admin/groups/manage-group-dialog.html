@@ -1,0 +1,119 @@
+<app-modal [(open)]="open" [heading]="group()?.name ?? ''" description="Nom et composition.">
+  <div class="flex flex-col gap-5">
+    @if (errorMessage(); as message) {
+      <p
+        role="alert"
+        class="rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+      >
+        {{ message }}
+      </p>
+    }
+
+    @if (feedback(); as message) {
+      <p
+        role="status"
+        class="rounded-md border border-success-text bg-success-subtle px-3 py-2 text-label text-success-text"
+      >
+        {{ message }}
+      </p>
+    }
+
+    <!-- Nom -->
+    <div class="flex flex-col gap-1.5">
+      <label for="manage-group-name" class="text-label text-text-secondary">Nom du groupe</label>
+      <div class="flex gap-2">
+        <input
+          appField
+          id="manage-group-name"
+          class="flex-1"
+          autocomplete="off"
+          [attr.maxlength]="nameMaxLength"
+          [value]="name()"
+          (input)="name.set($any($event.target).value)"
+        />
+        <button appButton (click)="saveName()" [disabled]="!nameChanged() || pending()">
+          Renommer
+        </button>
+      </div>
+      <span class="text-caption text-text-muted">
+        La conversation adossée au groupe prend le même nom.
+      </span>
+    </div>
+
+    <!-- Composition -->
+    <div class="flex flex-col gap-2 border-t border-border-default pt-4">
+      <span class="text-label text-text-secondary">
+        Composition
+        @if (!loading()) {
+          <span class="text-text-muted">({{ members().length }})</span>
+        }
+      </span>
+
+      @if (isGeneral()) {
+        <p class="text-caption text-text-muted">
+          L'appartenance au groupe général est automatique : chaque membre y est rattaché à son
+          arrivée dans l'organisation.
+        </p>
+      }
+
+      @if (loading()) {
+        <p class="text-caption text-text-muted" role="status">Chargement…</p>
+      } @else if (members().length === 0) {
+        <p class="text-caption text-text-muted">Ce groupe ne contient aucun membre.</p>
+      } @else {
+        <ul class="flex max-h-56 flex-col gap-1 overflow-y-auto">
+          @for (member of members(); track member.memberId) {
+            <li class="flex items-center gap-2 rounded-md border border-border-default px-3 py-1.5">
+              <span class="min-w-0 flex-1 truncate text-body">{{ displayName(member) }}</span>
+              @if (!isGeneral()) {
+                <button
+                  appButton
+                  variant="ghost"
+                  (click)="remove(member)"
+                  [disabled]="pending()"
+                  [attr.aria-label]="'Retirer ' + displayName(member) + ' du groupe'"
+                >
+                  Retirer
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <!-- Ajout -->
+    @if (!isGeneral()) {
+      <div class="flex flex-col gap-1.5 border-t border-border-default pt-4">
+        <label for="manage-group-add" class="text-label text-text-secondary">
+          Ajouter un membre
+        </label>
+        @if (candidates().length === 0) {
+          <p class="text-caption text-text-muted">
+            Tous les membres de l'organisation figurent déjà dans ce groupe.
+          </p>
+        } @else {
+          <div class="flex gap-2">
+            <select
+              appField
+              id="manage-group-add"
+              class="flex-1"
+              [value]="selected()"
+              (change)="selected.set($any($event.target).value)"
+            >
+              <option value="">Choisir un membre…</option>
+              @for (member of candidates(); track member.memberId) {
+                <option [value]="member.memberId">{{ displayName(member) }}</option>
+              }
+            </select>
+            <button appButton (click)="add()" [disabled]="!selected() || pending()">Ajouter</button>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="flex justify-end border-t border-border-default pt-4">
+      <button appButton variant="secondary" (click)="close()">Fermer</button>
+    </div>
+  </div>
+</app-modal>

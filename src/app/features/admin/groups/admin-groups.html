@@ -1,0 +1,117 @@
+<div class="mx-auto w-full max-w-6xl p-4 md:p-6">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-title">Groupes</h1>
+      @if (loaded()) {
+        <p class="text-caption text-text-muted">{{ total() }} groupe(s)</p>
+      }
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input
+        appField
+        type="search"
+        placeholder="Rechercher"
+        class="w-48"
+        [value]="search()"
+        (input)="onSearch($any($event.target).value)"
+      />
+      <button appButton variant="primary" (click)="openCreate()">Créer un groupe</button>
+    </div>
+  </header>
+
+  <app-modal
+    [(open)]="createOpen"
+    heading="Créer un groupe"
+    description="Une conversation sera automatiquement ouverte pour ce groupe."
+  >
+    <form (submit)="create($event)" class="flex flex-col gap-4">
+      @if (createError(); as message) {
+        <p
+          role="alert"
+          class="rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+        >
+          {{ message }}
+        </p>
+      }
+
+      <div class="flex flex-col gap-1.5">
+        <label for="group-name" class="text-label text-text-secondary">Nom du groupe</label>
+        <input
+          appField
+          id="group-name"
+          autocomplete="off"
+          [attr.maxlength]="nameMaxLength"
+          [value]="newName()"
+          (input)="newName.set($any($event.target).value)"
+          placeholder="CDA 2025-2026"
+        />
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button appButton variant="secondary" (click)="createOpen.set(false)">Annuler</button>
+        <button appButton type="submit" [disabled]="!newName().trim() || creating()">
+          {{ creating() ? 'Création…' : 'Créer' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <app-manage-group-dialog
+    [(open)]="manageOpen"
+    [group]="managed()"
+    (changed)="onGroupChanged($event)"
+  />
+
+  @if (successMessage(); as message) {
+    <p
+      role="status"
+      class="mt-4 rounded-md border border-success-text bg-success-subtle px-3 py-2 text-label text-success-text"
+    >
+      {{ message }}
+    </p>
+  }
+
+  @if (errorMessage(); as message) {
+    <p
+      role="alert"
+      class="mt-4 rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+    >
+      {{ message }}
+    </p>
+  } @else if (!loaded()) {
+    <p class="mt-6 text-body text-text-secondary" role="status">Chargement…</p>
+  } @else if (groups().length === 0) {
+    <p class="mt-6 text-body text-text-secondary">Aucun groupe ne correspond à cette recherche.</p>
+  } @else {
+    <ul
+      class="mt-4 flex flex-col gap-2 transition-opacity"
+      [class.opacity-50]="pending()"
+      [attr.aria-busy]="pending() ? 'true' : null"
+    >
+      @for (group of groups(); track group.groupId) {
+        <li
+          class="flex flex-wrap items-center gap-3 rounded-lg border border-border-default bg-surface-default p-3"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-body font-medium">{{ group.name }}</p>
+            @if (group.kind === 'GENERAL') {
+              <p class="truncate text-caption text-text-muted">
+                Tout nouveau membre y est rattaché automatiquement.
+              </p>
+            }
+          </div>
+          <app-badge tone="neutral" variant="outline">{{ kindLabel(group) }}</app-badge>
+          <button
+            appButton
+            variant="ghost"
+            (click)="manage(group)"
+            [attr.aria-label]="'Gérer le groupe ' + group.name"
+          >
+            Gérer
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

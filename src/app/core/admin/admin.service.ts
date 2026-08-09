@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { map, Observable, throwError } from 'rxjs';
 
 import { AuthService, type MemberRole } from '../auth/auth.service';
 
@@ -64,6 +64,8 @@ export interface MemberFilters {
   status?: MemberStatus;
   role?: MemberRole;
   q?: string;
+  /** Restreint aux membres du groupe désigné. */
+  groupId?: string;
   page?: number;
   size?: number;
 }
@@ -119,6 +121,7 @@ export class AdminService {
     if (filters.status) params['status'] = filters.status;
     if (filters.role) params['role'] = filters.role;
     if (filters.q?.trim()) params['q'] = filters.q.trim();
+    if (filters.groupId) params['groupId'] = filters.groupId;
     if (filters.page !== undefined) params['page'] = String(filters.page);
     if (filters.size !== undefined) params['size'] = String(filters.size);
 
@@ -162,6 +165,98 @@ export class AdminService {
       return throwError(() => new Error('Aucune organisation associée au compte courant.'));
     }
     return this.http.post<void>(`${base}/members`, payload);
+  }
+
+  /**
+   * Suspend un membre : mesure conservatoire réversible. Le compte utilisateur
+   * n'est pas touché — statut d'adhésion et statut de compte sont orthogonaux.
+   */
+  suspendMember(memberId: string): Observable<void> {
+    return this.memberAction(memberId, 'suspend');
+  }
+
+  /** Lève la suspension d'un membre. */
+  reactivateMember(memberId: string): Observable<void> {
+    return this.memberAction(memberId, 'reactivate');
+  }
+
+  /**
+   * Change le rôle d'un membre.
+   *
+   * <p>Le backend refuse en 409 de rétrograder le dernier administrateur actif :
+   * l'invariant vit dans le domaine, le client se contente d'en restituer le
+   * refus.</p>
+   */
+  changeMemberRole(memberId: string, role: MemberRole): Observable<void> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+    return this.http.put<void>(`${base}/members/${memberId}/role`, { role });
+  }
+
+  /**
+   * Anonymise un utilisateur — droit à l'effacement, article 17 du RGPD.
+   *
+   * <p>Route rattachée à l'utilisateur et non au membre : l'effacement porte sur
+   * l'identité, qui vit dans un autre bounded context que l'adhésion. C'est donc
+   * le `userId` qu'il faut passer, pas le `memberId`.</p>
+   *
+   * <p>Irréversible. L'opération est idempotente côté backend.</p>
+   */
+  anonymizeUser(userId: string): Observable<void> {
+    return this.http.post<void>(`/api/users/${userId}/anonymize`, null);
+  }
+
+  /**
+   * Crée un groupe.
+   *
+   * <p>Le backend répond `{ id }` — et non `{ groupId }` comme la liste des
+   * groupes. L'écart est absorbé ici plutôt que propagé dans les écrans.</p>
+   */
+  createGroup(name: string): Observable<string> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+    return this.http
+      .post<{ id: string }>(`${base}/groups`, { name })
+      .pipe(map((response) => response.id));
+  }
+
+  /** Renomme un groupe. Le renommage se propage à la conversation adossée au groupe. */
+  renameGroup(groupId: string, name: string): Observable<void> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+    return this.http.put<void>(`${base}/groups/${groupId}/name`, { name });
+  }
+
+  /** Rattache un membre à un groupe. Idempotent : rejouer l'appel laisse l'état inchangé. */
+  addMemberToGroup(groupId: string, memberId: string): Observable<void> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+    return this.http.put<void>(`${base}/groups/${groupId}/members/${memberId}`, null);
+  }
+
+  /** Retire un membre d'un groupe. Ni le membre ni le groupe ne sont supprimés. */
+  removeMemberFromGroup(groupId: string, memberId: string): Observable<void> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+    return this.http.delete<void>(`${base}/groups/${groupId}/members/${memberId}`);
+  }
+
+  private memberAction(memberId: string, action: 'suspend' | 'reactivate'): Observable<void> {
+    const base = this.organisationUrl();
+    if (!base) {
+      return throwError(() => new Error('Aucune organisation associée au compte courant.'));
+    }
+    return this.http.post<void>(`${base}/members/${memberId}/${action}`, null);
   }
 
   private organisationUrl(): string | null {

@@ -60,9 +60,22 @@ export const routes: Routes = [
       {
         path: 'administration',
         canActivate: [adminGuard],
-        loadComponent: () =>
-          import('./features/admin/members/admin-members').then((m) => m.AdminMembers),
-        title: 'Administration — Alerte',
+        loadComponent: () => import('./features/admin/admin-layout').then((m) => m.AdminLayout),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'membres' },
+          {
+            path: 'membres',
+            loadComponent: () =>
+              import('./features/admin/members/admin-members').then((m) => m.AdminMembers),
+            title: 'Membres — Alerte',
+          },
+          {
+            path: 'groupes',
+            loadComponent: () =>
+              import('./features/admin/groups/admin-groups').then((m) => m.AdminGroups),
+            title: 'Groupes — Alerte',
+          },
+        ],
       },
     ],
   },

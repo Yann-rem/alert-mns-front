@@ -20,6 +20,7 @@ import { Badge } from '../../../ui/badge/badge';
 import { Button } from '../../../ui/button/button';
 import { Field } from '../../../ui/field/field';
 import { InviteMemberDialog } from './invite-member-dialog';
+import { ManageMemberDialog } from './manage-member-dialog';
 
 /** Onglets de la maquette : « en attente » ne liste pas des membres mais des invitations. */
 type Tab = 'all' | 'active' | 'suspended' | 'pending';
@@ -36,7 +37,7 @@ const LOADER_DELAY_MS = 200;
 @Component({
   selector: 'app-admin-members',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Avatar, Badge, Button, Field, InviteMemberDialog],
+  imports: [Avatar, Badge, Button, Field, InviteMemberDialog, ManageMemberDialog],
   templateUrl: './admin-members.html',
   host: { class: 'block' },
 })
@@ -62,6 +63,9 @@ export class AdminMembers implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
   protected readonly inviteOpen = signal(false);
+  protected readonly manageOpen = signal(false);
+  /** Membre ouvert dans la boîte d'administration. */
+  protected readonly managed = signal<MemberSummary | null>(null);
 
   protected readonly members = signal<MemberSummary[]>([]);
   protected readonly total = signal(0);
@@ -104,6 +108,22 @@ export class AdminMembers implements OnInit {
     this.tab.set('pending');
     this.load();
     this.successMessage.set('Invitation envoyée.');
+  }
+
+  protected manage(member: MemberSummary): void {
+    this.managed.set(member);
+    this.successMessage.set(null);
+    this.manageOpen.set(true);
+  }
+
+  /**
+   * Une action a été acceptée : la liste est rechargée depuis le serveur plutôt
+   * que corrigée sur place. Suspendre un membre peut le faire sortir de l'onglet
+   * courant, et l'anonymisation modifie des champs que le client ne recalcule pas.
+   */
+  protected onMemberChanged(message: string): void {
+    this.load();
+    this.successMessage.set(message);
   }
 
   protected load(): void {
