@@ -1,0 +1,14 @@
+# Tout ce qui n'entre pas dans le contexte de construction. `node_modules` est le point
+# important : le laisser passer enverrait des centaines de mégaoctets au démon Docker et
+# écraserait l'installation faite par `npm ci` dans l'image.
+
+node_modules/
+dist/
+.angular/
+
+.git/
+.github/
+.idea/
+.vscode/
+
+*.log

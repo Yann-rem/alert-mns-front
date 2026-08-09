@@ -42,3 +42,46 @@ jobs:
       # erreurs de template que les tests unitaires ne couvrent pas.
       - name: Production build
         run: npx ng build
+
+  # Publication de l'image servant le client. Ne s'exécute qu'après la réussite des tests
+  # et du build, et uniquement sur la branche principale.
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # GHCR n'accepte que des noms d'image en minuscules, là où le propriétaire du dépôt
+      # comporte une majuscule. L'expansion ${VAR,,} de bash fait la conversion.
+      - name: Résoudre le nom de l'image
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/alert-mns-front" >> "$GITHUB_ENV"
+
+      - name: Se connecter au registre
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurer Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # L'image reconstruit le client depuis les sources plutôt que de récupérer le
+      # `dist/` produit à l'étape précédente : elle reste ainsi reproductible hors de
+      # cette chaîne, sur n'importe quelle machine disposant de Docker.
+      - name: Construire et publier
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
