@@ -85,3 +85,23 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Mise en production. Le script appelé côté serveur récupère les images des DEUX dépôts :
+  # sans ce travail, une modification du seul client serait publiée mais jamais mise en ligne.
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Préparer la clé de déploiement
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          install -m 600 /dev/stdin ~/.ssh/id_ed25519 <<< "${{ secrets.DEPLOY_SSH_KEY }}"
+          # Empreinte fournie en variable plutôt que découverte à chaque exécution : une
+          # découverte à la volée accepterait n'importe quel hôte se présentant à cette
+          # adresse, ce qui viderait la vérification de son sens.
+          echo "${{ vars.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Déployer
+        run: ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} deploy
