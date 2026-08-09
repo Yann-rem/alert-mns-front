@@ -11,7 +11,7 @@ import { AlertBanner } from '../alerting/banner/alert-banner';
 interface Destination {
   path: string;
   label: string;
-  icon: 'messages' | 'broadcast' | 'admin';
+  icon: 'messages' | 'broadcast' | 'admin' | 'profile';
 }
 
 /**
@@ -50,6 +50,8 @@ export class Shell {
     if (this.auth.isAdmin()) {
       items.push({ path: '/administration', label: 'Administration', icon: 'admin' });
     }
+    // En dernier : c'est la destination la moins fréquentée, et la convention la place en bout.
+    items.push({ path: '/profil', label: 'Profil', icon: 'profile' });
     return items;
   });
 

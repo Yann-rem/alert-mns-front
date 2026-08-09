@@ -4,7 +4,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } fr
  * Interrupteur on/off (design system Alerte).
  *
  * ```html
- * <app-toggle [(checked)]="active" />
+ * <app-toggle [(checked)]="active" ariaLabel="Activer le message d'absence" />
  * <app-toggle [checked]="msg.active()" (checkedChange)="msg.setActive($event)" />
  * ```
  */
@@ -17,6 +17,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } fr
       type="button"
       role="switch"
       [attr.aria-checked]="checked()"
+      [attr.aria-label]="ariaLabel() || null"
       [disabled]="disabled()"
       (click)="toggle()"
       class="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-full outline-2 outline-offset-2 outline-transparent transition-colors focus-visible:outline-accent-solid disabled:pointer-events-none disabled:opacity-50"
@@ -34,6 +35,11 @@ export class Toggle {
   /** État on/off, bindable dans les deux sens via `[(checked)]`. */
   readonly checked = model(false);
   readonly disabled = input(false, { transform: booleanAttribute });
+  /**
+   * Intitulé annoncé par les lecteurs d'écran. À renseigner dès que l'interrupteur n'est pas déjà
+   * décrit par un `<label>` associé : un `role="switch"` sans nom n'est qu'un « interrupteur ».
+   */
+  readonly ariaLabel = input('');
 
   protected toggle(): void {
     if (!this.disabled()) {

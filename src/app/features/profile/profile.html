@@ -1,0 +1,149 @@
+<div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-6">
+  <header>
+    <h1 class="text-title">Profil</h1>
+    <p class="text-caption text-text-muted">Vos informations et votre message d'absence.</p>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p
+      role="alert"
+      class="rounded-md border border-danger-border bg-danger-subtle px-3 py-2 text-label text-danger-text"
+    >
+      {{ message }}
+    </p>
+  }
+
+  <form
+    (submit)="saveIdentity($event)"
+    class="flex flex-col gap-4 rounded-lg border border-border-default bg-surface-default p-4 md:p-6"
+  >
+    <h2 class="text-heading">Identité</h2>
+
+    @if (identityMessage(); as message) {
+      <p
+        role="status"
+        class="rounded-md border border-success-text bg-success-subtle px-3 py-2 text-label text-success-text"
+      >
+        {{ message }}
+      </p>
+    }
+
+    <div class="flex flex-col gap-4 sm:flex-row">
+      <div class="flex flex-1 flex-col gap-1.5">
+        <label for="profile-first-name" class="text-label text-text-secondary">Prénom</label>
+        <input
+          appField
+          id="profile-first-name"
+          autocomplete="given-name"
+          [attr.maxlength]="nameMaxLength"
+          [value]="firstName()"
+          (input)="firstName.set($any($event.target).value)"
+        />
+      </div>
+
+      <div class="flex flex-1 flex-col gap-1.5">
+        <label for="profile-last-name" class="text-label text-text-secondary">Nom</label>
+        <input
+          appField
+          id="profile-last-name"
+          autocomplete="family-name"
+          [attr.maxlength]="nameMaxLength"
+          [value]="lastName()"
+          (input)="lastName.set($any($event.target).value)"
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="profile-email" class="text-label text-text-secondary">Adresse e-mail</label>
+      <input appField id="profile-email" readonly [value]="user()?.email ?? ''" />
+      <span class="text-caption text-text-muted">
+        L'adresse identifie le compte : elle ne se modifie pas depuis cet écran.
+      </span>
+    </div>
+
+    <div class="flex justify-end">
+      <button appButton type="submit" [disabled]="!canSaveIdentity()">
+        {{ savingIdentity() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </form>
+
+  <form
+    (submit)="saveAbsence($event)"
+    class="flex flex-col gap-4 rounded-lg border border-border-default bg-surface-default p-4 md:p-6"
+  >
+    <h2 class="text-heading">Message d'absence</h2>
+
+    @if (absenceMessageFeedback(); as message) {
+      <p
+        role="status"
+        class="rounded-md border border-success-text bg-success-subtle px-3 py-2 text-label text-success-text"
+      >
+        {{ message }}
+      </p>
+    }
+
+    <div class="flex items-center justify-between gap-3">
+      <span class="text-label text-text-secondary">
+        Prévenir les personnes qui vous écrivent
+        <span class="block text-caption text-text-muted">
+          Le message reste enregistré une fois désactivé : vous le réactiverez sans le ressaisir.
+        </span>
+      </span>
+      <app-toggle [(checked)]="absenceActive" ariaLabel="Activer le message d'absence" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="profile-absence" class="text-label text-text-secondary">Message</label>
+      <textarea
+        id="profile-absence"
+        rows="3"
+        [attr.maxlength]="absenceMaxLength"
+        [value]="absenceContent()"
+        (input)="absenceContent.set($any($event.target).value)"
+        placeholder="Je suis absent jusqu'au 15 septembre."
+        class="min-h-20 w-full resize-y rounded-md border border-border-default bg-surface-sunken px-3 py-2 text-body text-text-primary outline-2 outline-offset-0 outline-transparent transition-colors placeholder:text-text-muted focus-visible:border-accent-solid focus-visible:outline-accent-solid"
+      ></textarea>
+      @if (showRemaining()) {
+        <span class="text-caption text-text-muted" aria-live="polite">
+          {{ remaining() }} caractère(s) restant(s)
+        </span>
+      }
+    </div>
+
+    <div class="flex justify-end">
+      <button appButton type="submit" [disabled]="!canSaveAbsence()">
+        {{ savingAbsence() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </form>
+
+  <section
+    class="flex flex-col gap-3 rounded-lg border border-border-default bg-surface-default p-4 md:p-6"
+  >
+    <h2 class="text-heading">Compte</h2>
+    <dl class="flex flex-col gap-2 text-body">
+      <div class="flex items-center justify-between gap-3">
+        <dt class="text-label text-text-secondary">Rôle</dt>
+        <dd>
+          @if (roleLabel(); as label) {
+            <app-badge tone="neutral" variant="outline">{{ label }}</app-badge>
+          } @else {
+            <span class="text-text-muted">Aucun</span>
+          }
+        </dd>
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <dt class="text-label text-text-secondary">Statut</dt>
+        <dd>
+          @if (user()?.memberStatus === 'SUSPENDED') {
+            <app-badge tone="danger">Suspendu</app-badge>
+          } @else {
+            <app-badge tone="success">Actif</app-badge>
+          }
+        </dd>
+      </div>
+    </dl>
+  </section>
+</div>

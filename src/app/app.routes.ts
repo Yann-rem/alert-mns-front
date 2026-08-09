@@ -53,6 +53,11 @@ export const routes: Routes = [
         title: 'Diffuser une alerte — Alerte',
       },
       {
+        path: 'profil',
+        loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
+        title: 'Profil — Alerte',
+      },
+      {
         path: 'administration',
         canActivate: [adminGuard],
         loadComponent: () =>

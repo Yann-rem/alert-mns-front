@@ -71,24 +71,24 @@ describe('Shell', () => {
     return Array.from(rail.querySelectorAll('a')).map((link) => link.getAttribute('href') ?? '');
   }
 
-  it('un simple membre ne voit que Messages', async () => {
+  it('un simple membre ne voit que Messages et son profil', async () => {
     const fixture = await setup('MEMBER');
 
-    expect(railLinks(fixture)).toEqual(['/messages']);
+    expect(railLinks(fixture)).toEqual(['/messages', '/profil']);
     http.verify();
   });
 
   it('un gestionnaire voit Diffuser, mais pas l’administration', async () => {
     const fixture = await setup('MANAGER');
 
-    expect(railLinks(fixture)).toEqual(['/messages', '/diffuser']);
+    expect(railLinks(fixture)).toEqual(['/messages', '/diffuser', '/profil']);
     http.verify();
   });
 
   it('un admin voit toutes les destinations', async () => {
     const fixture = await setup('ADMIN');
 
-    expect(railLinks(fixture)).toEqual(['/messages', '/diffuser', '/administration']);
+    expect(railLinks(fixture)).toEqual(['/messages', '/diffuser', '/administration', '/profil']);
     http.verify();
   });
 
