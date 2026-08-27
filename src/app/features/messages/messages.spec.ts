@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -163,6 +163,69 @@ describe('Messages', () => {
       (fixture.nativeElement as HTMLElement).querySelectorAll('li .rounded-lg'),
     ).map((b) => b.textContent?.trim());
     expect(bubbles).toEqual(['Premier', 'Deuxième']);
+    http.verify();
+  });
+
+  it('le nom d’un auteur ouvre l’échange direct avec lui', async () => {
+    const fixture = await setup('c-1');
+    flushConversations();
+    http
+      .expectOne((r) => r.url === `${CONVERSATIONS_URL}/c-1/messages`)
+      .flush([
+        {
+          messageId: 'm-2',
+          authorId: 'other-1',
+          authorName: 'Sofia Nkolo',
+          content: 'Bonjour à tous',
+          replyToMessageId: null,
+          sentAt: '2026-08-01T09:05:00Z',
+        },
+      ]);
+    await fixture.whenStable();
+
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>(
+        'button[aria-label="Envoyer un message direct à Sofia Nkolo"]',
+      )!
+      .click();
+    await fixture.whenStable();
+
+    const created = http.expectOne(`${CONVERSATIONS_URL}/direct`);
+    expect(created.request.body).toEqual({ targetMemberId: 'other-1' });
+    created.flush({ conversationId: 'c-9' });
+    await fixture.whenStable();
+
+    // La liste est rechargée avant la navigation : sans elle, le fil resterait sur
+    // « Ouverture de la conversation… », la nouvelle conversation lui étant inconnue.
+    flushConversations();
+    await fixture.whenStable();
+
+    expect(navigate).toHaveBeenCalledWith(['/messages', 'c-9']);
+    http.verify();
+  });
+
+  it('dans un échange direct, le nom de l’interlocuteur n’est pas cliquable', async () => {
+    const fixture = await setup('c-2');
+    flushConversations();
+    http
+      .expectOne((r) => r.url === `${CONVERSATIONS_URL}/c-2/messages`)
+      .flush([
+        {
+          messageId: 'm-3',
+          authorId: 'other-2',
+          authorName: 'Karim Belkacem',
+          content: 'Salut',
+          replyToMessageId: null,
+          sentAt: '2026-08-01T09:05:00Z',
+        },
+      ]);
+    await fixture.whenStable();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('button[aria-label^="Envoyer un message direct"]')).toBeNull();
+    expect(text(fixture)).toContain('Karim Belkacem');
     http.verify();
   });
 

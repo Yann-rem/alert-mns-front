@@ -89,7 +89,21 @@
               <li class="flex" [class.justify-end]="isMine(message)">
                 <div class="max-w-[80%] min-w-0">
                   @if (!isMine(message)) {
-                    <p class="mb-0.5 text-micro text-text-muted">{{ message.authorName }}</p>
+                    @if (canOpenDirect()) {
+                      <!-- Le nom ouvre l'échange direct : c'est le seul chemin vers une
+                           conversation à deux, faute d'annuaire ouvert aux membres. -->
+                      <button
+                        type="button"
+                        class="mb-0.5 text-micro text-text-muted transition-colors hover:text-accent-text hover:underline disabled:opacity-50"
+                        [disabled]="openingDirect()"
+                        [attr.aria-label]="'Envoyer un message direct à ' + message.authorName"
+                        (click)="openDirect(message)"
+                      >
+                        {{ message.authorName }}
+                      </button>
+                    } @else {
+                      <p class="mb-0.5 text-micro text-text-muted">{{ message.authorName }}</p>
+                    }
                   }
                   <div
                     class="rounded-lg px-3 py-2 text-body break-words"
