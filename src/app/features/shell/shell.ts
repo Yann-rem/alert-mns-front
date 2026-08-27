@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { AuthService } from '../../core/auth/auth.service';
 import { RealtimeService } from '../../core/realtime/realtime.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { Button } from '../../ui/button/button';
 import { AlertBanner } from '../alerting/banner/alert-banner';
 
@@ -37,9 +38,16 @@ export class Shell {
   private readonly auth = inject(AuthService);
   private readonly realtime = inject(RealtimeService);
   private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
 
   protected readonly user = this.auth.user;
   protected readonly connected = this.realtime.connected;
+  protected readonly theme = this.themeService.theme;
+
+  /** Le bouton annonce la destination, pas l'état courant : c'est ce sur quoi on clique. */
+  protected readonly themeLabel = computed(() =>
+    this.theme() === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre',
+  );
 
   /** On n'affiche pas une porte qui se refermerait : chaque destination suit son garde de route. */
   protected readonly destinations = computed<Destination[]>(() => {
@@ -58,6 +66,10 @@ export class Shell {
   constructor() {
     this.realtime.connect();
     inject(DestroyRef).onDestroy(() => this.realtime.disconnect());
+  }
+
+  protected toggleTheme(): void {
+    this.themeService.toggle();
   }
 
   protected logout(): void {
