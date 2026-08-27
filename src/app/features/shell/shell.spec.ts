@@ -28,6 +28,13 @@ describe('Shell', () => {
   let http: HttpTestingController;
   let realtime: RealtimeStub;
 
+  // Le thème s'applique à <html>, hors de la fixture : sans ce nettoyage il fuiterait
+  // d'un test à l'autre.
+  afterEach(() => {
+    document.documentElement.classList.remove('dark');
+    localStorage.clear();
+  });
+
   async function setup(role: MemberRole): Promise<ComponentFixture<Shell>> {
     realtime = new RealtimeStub();
 
@@ -101,6 +108,19 @@ describe('Shell', () => {
     fixture.destroy();
 
     expect(realtime.disconnects).toBe(1);
+  });
+
+  it('le bouton de thème bascule le mode sombre', async () => {
+    const fixture = await setup('MEMBER');
+    const host = fixture.nativeElement as HTMLElement;
+
+    host.querySelector<HTMLButtonElement>('button[aria-label="Passer en mode sombre"]')!.click();
+    await fixture.whenStable();
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    // Le libellé annonce la destination : il doit avoir changé avec l'état.
+    expect(host.querySelector('button[aria-label="Passer en mode clair"]')).not.toBeNull();
+    http.verify();
   });
 
   it('la déconnexion ferme le canal puis renvoie à la connexion', async () => {

@@ -19,6 +19,34 @@
         {{ u.firstName }} {{ u.lastName }}
       </span>
     }
+    <!-- Icône seule : l'intitulé passe par aria-label et l'infobulle, comme dans le rail -->
+    <button
+      appButton
+      variant="ghost"
+      (click)="toggleTheme()"
+      [attr.aria-label]="themeLabel()"
+      [title]="themeLabel()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        class="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        @if (theme() === 'dark') {
+          <circle cx="12" cy="12" r="4" />
+          <path
+            d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"
+          />
+        } @else {
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
+        }
+      </svg>
+    </button>
     <button appButton variant="ghost" (click)="logout()">Se déconnecter</button>
   </div>
 </header>
