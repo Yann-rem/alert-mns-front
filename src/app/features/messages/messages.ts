@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -61,6 +61,7 @@ export class Messages {
   private readonly messaging = inject(MessagingService);
   private readonly realtime = inject(RealtimeService);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   /** Lié au paramètre de route par `withComponentInputBinding()`. */
   readonly conversationId = input<string | undefined>();
@@ -80,6 +81,17 @@ export class Messages {
   protected readonly openConversation = computed(() =>
     this.conversations().find((c) => c.conversationId === this.conversationId()),
   );
+
+  /** Ouverture d'un échange direct en cours : garde contre le double clic. */
+  protected readonly openingDirect = signal(false);
+
+  /**
+   * Le nom d'un auteur n'est cliquable que dans un fil de groupe.
+   *
+   * <p>Dans un échange direct, l'interlocuteur est déjà celui de la conversation ouverte : le clic
+   * y ramènerait au même endroit, ce qui donnerait un bouton sans effet visible.</p>
+   */
+  protected readonly canOpenDirect = computed(() => this.openConversation()?.kind === 'GROUP');
 
   /** Personnes en train d'écrire dans la conversation ouverte, par nom d'affichage. */
   protected readonly typists = signal<string[]>([]);
@@ -271,6 +283,45 @@ export class Messages {
       // La fréquence est bridée dans le service : on peut signaler à chaque touche.
       this.realtime.notifyTyping(conversationId);
     }
+  }
+
+  // --- Échange direct ---
+
+  /**
+   * Ouvre l'échange direct avec l'auteur d'un message.
+   *
+   * <p>C'est le seul chemin vers une conversation directe. Le cas d'usage existait côté serveur et
+   * dans ce service, mais aucun écran ne l'appelait : l'attente n°6 du cahier des charges était
+   * donc implémentée sans être atteignable, ce qu'a révélé le jeu d'essai.</p>
+   *
+   * <p><b>Pourquoi partir du nom affiché</b> plutôt que d'un annuaire : la liste des membres est
+   * réservée aux administrateurs, et l'ouvrir à tous supposerait un point d'entrée dédié, une
+   * projection réduite des données personnelles et une décision sur ce que chacun a le droit de
+   * voir. Le nom de l'auteur est déjà sous les yeux du lecteur, avec son identifiant.</p>
+   *
+   * <p>Le serveur retrouve la conversation lorsqu'elle existe déjà : deux clics successifs mènent
+   * au même fil, jamais à un doublon.</p>
+   */
+  protected openDirect(message: Message): void {
+    if (this.openingDirect()) {
+      return;
+    }
+
+    this.openingDirect.set(true);
+    this.errorMessage.set(null);
+    this.messaging.createDirect(message.authorId).subscribe({
+      next: ({ conversationId }) => {
+        this.openingDirect.set(false);
+        // La conversation vient d'apparaître : sans ce rechargement, la liste ne la connaîtrait
+        // pas et le fil resterait sur « Ouverture de la conversation… ».
+        this.loadConversations();
+        void this.router.navigate(['/messages', conversationId]);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.openingDirect.set(false);
+        this.fail(error);
+      },
+    });
   }
 
   // --- Rendu ---
