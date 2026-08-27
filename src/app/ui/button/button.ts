@@ -40,9 +40,13 @@ export class Button {
 
   // Outline toujours déclaré, transparent au repos : seule la couleur s'anime
   // (sinon la transition part de la valeur par défaut du navigateur → flash).
+  //
+  // `whitespace-nowrap` et `shrink-0` vont avec la hauteur fixe : dans un conteneur flex
+  // à l'étroit, un libellé qui se replie déborde du fond du bouton au lieu de l'agrandir.
+  // Mieux vaut un bouton qui garde sa taille et pousse ses voisins.
   private static readonly BASE =
-    'inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md ' +
-    'text-body font-medium select-none transition-colors ' +
+    'inline-flex shrink-0 items-center justify-center gap-2 h-9 px-4 rounded-md ' +
+    'whitespace-nowrap text-body font-medium select-none transition-colors ' +
     'outline-2 outline-offset-2 outline-transparent focus-visible:outline-accent-solid ' +
     'disabled:opacity-50 disabled:pointer-events-none';
 
